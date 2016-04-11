@@ -1,10 +1,10 @@
 # ESP8266 WiFi I/O
 
-## General Info
+## Background Info
 
 This project contains some experimental code for using the ESP8266 to implement IR, control, and sensing over WiFi.  It is now updated to use the SPIFFS filesystem for web pages and persistent configuration/status data.
 
-It was my first attempt at programming the ESP8266.  I used the Global Cache ITach as a base since I had some devices, its operation was documented, and I have used them with Homeseer and Perl scripts.  But the HTTP interface makes this device much easier to use and potentially more powerful.  
+As a first attempt at programming the ESP8266, I used the Global Cache ITach as a base since I had some devices, its operation was documented, and I have used them with Homeseer and Perl scripts.  But having an HTTP interface makes this device much easier to use and potentially more powerful.  
 
 ## Goals
 
