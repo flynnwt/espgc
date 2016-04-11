@@ -28,7 +28,11 @@ ConnectorSensor::ConnectorSensor(Connector *c, int fPin, int sPin) {
   fcnPin = fPin;
   statusPin = sPin;
   if (fcnPin != -1) {
-    pinMode(fcnPin, INPUT_PULLUP);
+    if (fcnPin != 16) {
+      pinMode(fcnPin, INPUT_PULLUP);
+    } else {
+      pinMode(fcnPin, INPUT_PULLDOWN_16);
+    }
   }
   if (statusPin != -1) {
     pinMode(statusPin, OUTPUT);
@@ -51,7 +55,11 @@ ConnectorSensorNotify::ConnectorSensorNotify(Connector *c, int fPin, int sPin) {
   fcnPin = fPin;
   statusPin = sPin;
   if (fcnPin != -1) {
-    pinMode(fcnPin, INPUT_PULLUP);
+    if (fcnPin != 16) {
+      pinMode(fcnPin, INPUT_PULLUP);
+    } else {
+      pinMode(fcnPin, INPUT_PULLDOWN_16);
+    }
   }
   if (statusPin != -1) {
     pinMode(statusPin, OUTPUT);

@@ -49,7 +49,6 @@ EspClass* esp = new EspClass();
 Config* config;
 GCIT *gc;
 ESP8266WebServer *server;
-bool skipConfig = false;              // if previous boot was bad
 int enableTcp, enableDiscovery;       // deferred at start 
 Status *status;
 
@@ -69,7 +68,7 @@ String getMAC() {
   return res;
 }
 
-String startTimestamp;
+String startTimestamp; // problems when static in function
 void showtime() {
   static time_t prevDisplay = 0;
   unsigned int latency = 0;
@@ -86,10 +85,13 @@ void showtime() {
 
   if (timeStatus() != timeNotSet) {
     if (now() >= prevDisplay + updateTime) {
-      latency = (millis() - startTime) * 1000L / loops;
+      //latency = (millis() - startTime) * 1000L / loops;  // too oflowy
+      if (loops >= 1000) {
+        latency = (millis() - startTime) / (loops / 1000);
+      }
       prevDisplay = now();
-      // hmmm...i dont think they leaking anymore
-      Serial.printf("\n*** %s free:%i lat:%ius (boot: %s)\n\n", ntpTimestamp().c_str(), esp->getFreeHeap(), latency, startTimestamp.c_str()); 
+      // hmmm...i dont think it's leaking anymore
+      Serial.printf("\n*** %s free:%i lat:%ius (boot: %s)\n\n", ntpTimestamp().c_str(), esp->getFreeHeap(), latency, startTimestamp.c_str());
     }
   }
 }
@@ -113,7 +115,7 @@ void initStatus() {
   unsigned int rgb[3] = { 15,12,13 };     // status (aithinker devboard rgb)
   status = new Status(rgb, 3);
   unsigned long statusError[3][2] = { { 1, 0 }, { 0, 0 }, { 0, 0 } };             // solid red
-  unsigned long statusReset[3][2] = { { 100, 100 }, { 0, 0 }, { 0, 0 } };         // zippy red 
+  unsigned long statusReset[3][2] = { { 100, 100 }, { 0, 0 }, { 0, 0 } };         // zippy red
   unsigned long statusBoot[3][2] = { { 100, 900 }, { 0, 0 }, { 0, 0 } };          // blippy red
   unsigned long statusAP[3][2] = { { 100, 100 }, { 100, 100 }, { 100, 100 } };    // zippy white
   unsigned long statusWiFi[3][2] = { { 250, 1750 }, { 0,0 }, { 250, 1750 } };     // pokey purple
@@ -202,6 +204,7 @@ void loadConfig(String text, bool deferTcp) {
   Serial.println();
   Serial.print(config->toJSON().stringify());
   Serial.println();
+
 }
 
 void saveConfig() {
@@ -314,9 +317,9 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
     gc->enableTcp(config->enableTcp);
     if (config->enableTcp) {
       if (config->enableDiscovery) {
-        Serial.println("Discovery beacon active on " + String(gc->settings().beaconPort) + ".");
+        Serial.println("Discovery beacon active on " + String(gc->settings()->beaconPort) + ".");
       }
-      Serial.println("TCP server started on " + String(gc->settings().tcpPort) + ".");
+      Serial.println("TCP server started on " + String(gc->settings()->tcpPort) + ".");
     }
 
     if (waitForNTP > 0) {
@@ -378,7 +381,7 @@ void setup(void) {
 
   status->set(Status::reset); // only meaningful for reset if synchronous
   resetCheck();
-  status->set(Status::boot);    
+  status->set(Status::boot);
 
   // Persistent Configuration 
   Serial.println("\n\n*** Configuration\n");
@@ -412,7 +415,7 @@ void setup(void) {
     m[i] = NULL;
   }
 
-  if (!skipConfig) {
+  if (!config->skipped) {
     for (i = 0; i < MAX_MODULES; i++) {
       if (config->modules[i][0] != NONE) {
         Serial.printf("Adding module %i, type=%i\n", i, config->modules[i][0]);
@@ -427,6 +430,7 @@ void setup(void) {
           rc = m[config->connectors[i][1]]->addConnector((ConnectorType)config->connectors[i][0], config->connectors[i][2], config->connectors[i][3], config->connectors[i][4]);
           if (!rc) {
             Serial.printf("FAILED!\n");
+
           }
         } else {
           Serial.printf("NOT adding connector %i:%i, type=%i, fPin=%i, sPin=%i (bad module)\n", config->connectors[i][1], config->connectors[i][2], config->connectors[i][0], config->connectors[i][3], config->connectors[i][4]);
@@ -435,6 +439,11 @@ void setup(void) {
     }
 
     Serial.println();
+
+  } else {
+    Serial.println("Skipped...also disabling discovery and tcp.");
+    enableDiscovery = false;
+    enableTcp = false;
   }
 
   // show tree
@@ -502,3 +511,48 @@ void loop(void) {
   gc->process();
   showtime();
 }
+
+// it would be possible to emulate multiple gc devices on one chip, but config needs to support it;
+//  then the http server is either made part of gc device and run multiple times (diff ports),
+//  or /api/cmd adds optional device parm
+// but the tcp port would have to be allowed to configured on the other end to distinguish them
+
+/*
+// Wifi2CC
+
+module=0,WiFi
+module=1,Relay
+connector=0,Relay,1,1,12,-1
+connector=1,Relay,1,2,13,-1
+connector=2,Relay,1,3,15,-1
+
+GCIT *gc2;
+gc2 = new GCIT(ModuleType::relay);
+Module *gc2m = gc->addModule(ModuleType::relay);
+gc2m->addConnector(ConnectorType::ir, 12, -1);
+gc2m->addConnector(ConnectorType::ir, 13, -1);
+gc2m->addConnector(ConnectorType::ir, 15, -1);
+gc2->setIpAddr(WiFi.localIP());
+gc2->enableTcp(true);
+gc2->process();
+*/
+
+/*
+// Wifi2IR
+
+module=0,WiFi
+module=1,IR
+connector=0,IR,1,1,5,-1
+connector=1,SensorNotify,1,2,4,-1
+connector=2,IRBlaster,1,3,5,-1
+
+GCIT *gc2; 
+gc2 = new GCIT(ModuleType::wifi);  
+Module *gc2m = gc->addModule(ModuleType::ir);
+gc2m->addConnector(ConnectorType::ir, 5, -1);
+gc2m->addConnector(ConnectorType::sensorNotify, 4,-1);
+gc2m->addConnector(ConnectorType::irBlaster, 5, -1);
+gc2->setIpAddr(WiFi.localIP());
+gc2->enableTcp(true);
+gc2->process();
+*/

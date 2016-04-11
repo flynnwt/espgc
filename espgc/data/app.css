@@ -1,0 +1,378 @@
+/*  Main stuff */
+
+.yanone {
+  font-family: 'Yanone Kaffeesatz', sans-serif;
+}
+
+body {
+  background-color: #CCFFE5;
+  color: #144a0a;
+  font-family: 'Open Sans', sans-serif;
+  /*overflow-y: scroll;*/
+  /* stop dancing divs */
+  min-height: 2000px;
+  margin: 0px;
+}
+
+.header {
+  color: #e0e0e0;
+  background: linear-gradient(to right, #65df50, #007500, #004800);
+  min-height: 175px;
+  height: 200px;
+  width: 100%;
+}
+
+.header .title {
+  font-size: 75px;
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+.header .subtitle {
+  font-family: 'Yanone Kaffeesatz', sans-serif;
+  font-size: 20px;
+  margin-top: 15px;
+  margin-right: 10%;
+  text-align: right;
+  padding-bottom: 20px;
+}
+
+.header .info {
+  font-size: 15px;
+  font-family: 'Yanone Kaffeesatz';
+  color: white;
+  padding-left: 20px;
+}
+
+.status {
+  background-color: rgba(188, 197, 0, 0.5);
+  font-size: xx-large;
+  padding-left: 5%;
+  white-space: pre;
+  width: 100%;
+}
+
+.status.ok {
+  color: green;
+}
+
+.status.error {
+  color: red;
+}
+
+.row {
+  margin: 10px;
+}
+
+.row:after {
+  content: "\a";
+  white-space: pre;
+}
+
+.tabs {
+  width: 90%;
+  margin: auto;
+}
+
+.tab {
+  background: linear-gradient(to bottom, #58902c, #BDCABD, #58902c);
+  color: #303030;
+  border: 2px solid white;
+  font-size: 24px;
+  width: 30%;
+  display: inline-block;
+  text-align: center;
+  cursor: pointer;
+}
+
+.tab.selected {
+  background: linear-gradient(to bottom, #65df50, #007500, #65df50);
+  color: white;
+}
+
+.tabContent {
+  /*display: none;*/
+}
+
+.label {
+  display: block;
+  float: left;
+  width: 20%;
+  text-align: right;
+  padding-right: 2%;
+}
+
+form {
+  text-align: center;
+}
+
+.value {
+  display: block;
+  float: left;
+  width: 20%;
+}
+
+.value input {
+  width: 100%;
+}
+
+.value input[type=checkbox] {
+  width: auto;
+}
+
+.value select {
+  width: 100%;
+}
+
+.inputError {
+  color: white;
+  background-color: red;
+  font-size: smaller;
+  padding: 5px;
+}
+
+.submit {
+  width: 10em;
+  background: linear-gradient(to bottom, #65df50, #007500, #65df50);
+  color: white;
+  margin-top: 1%;
+  font-size: 24px;
+}
+
+.refresh {
+  width: 10em;
+  background: linear-gradient(to bottom, #b9eab0, #007500, #b9eab0);
+  color: white;
+  margin-top: 1%;
+  font-size: 24px;
+}
+
+.save {
+  width: 10em;
+  background: linear-gradient(to bottom, #65df50, #007500, #65df50);
+  color: white;
+  margin-top: 1%;
+  font-size: 24px;
+}
+
+.restart {
+  width: 5em;
+  background: linear-gradient(to bottom, red,#3E1313, orangered);
+  color: white;
+  margin-top: 1%;
+  margin-right: 5em;
+  margin-left:5em;
+  font-size: 24px;
+}
+
+.networks {
+  color: black;
+  white-space: pre;
+  padding: 2%;
+  margin: 2%;
+}
+
+.networks .updated {
+  font-size: smaller;
+  color: #808080;
+  padding-left: 10%;
+}
+
+.networks .list {
+  font-family: 'Miriam Fixed';
+  margin: 2%;
+  text-align: left;
+}
+
+#noGots {
+  color: red;
+  font-size: 3em;
+  text-align: center;
+  background-color: rgb(80, 80, 80, .5);
+}
+
+form #modules {
+  text-align: left;
+}
+
+#modules {
+  font-family: 'Miriam Fixed';
+  margin-left: 10%;
+}
+
+#modules span {
+  margin-right: 10px;
+  width: 10%;
+  display: inline-block;
+}
+
+form #connectors {
+  text-align: left;
+  margin-left: 10%;
+}
+
+#connectors {
+  font-family: 'Miriam Fixed';
+}
+
+#connectors span {
+  margin-right: 10px;
+  width: 10%;
+  display: inline-block;
+}
+
+#configFileText {
+  width: 90%;
+  height: 40em;
+  font-family: 'Miriam Fixed';
+  font-size: larger;
+}
+
+#irRegular {
+  width: 90%;
+  height: 10em;
+  font-family: 'Miriam Fixed';
+  font-size: larger;
+}
+
+#irCompressed {
+  width: 90%;
+  height: 10em;
+  font-family: 'Miriam Fixed';
+  font-size: larger;
+}
+
+
+/* FONTS */
+
+
+/* cyrillic-ext */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(http://fonts.gstatic.com/s/opensans/v10/K88pR3goAWT7BTt32Z01m1tXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+20B4, U+2DE0-2DFF, U+A640-A69F;
+}
+
+
+/* cyrillic */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(http://fonts.gstatic.com/s/opensans/v10/RjgO7rYTmqiVp7vzi-Q5UVtXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+
+/* devanagari */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(http://fonts.gstatic.com/s/opensans/v10/ttwNtsRpgsxVmgGGmiUOEltXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
+  unicode-range: U+02BC, U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200B-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+}
+
+
+/* greek-ext */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(http://fonts.gstatic.com/s/opensans/v10/LWCjsQkB6EMdfHrEVqA1KVtXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+
+
+/* greek */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(http://fonts.gstatic.com/s/opensans/v10/xozscpT2726on7jbcb_pAltXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
+  unicode-range: U+0370-03FF;
+}
+
+
+/* vietnamese */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(http://fonts.gstatic.com/s/opensans/v10/59ZRklaO5bWGqF5A9baEEVtXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+1EA0-1EF1, U+20AB;
+}
+
+
+/* latin-ext */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(http://fonts.gstatic.com/s/opensans/v10/u-WUoqrET9fUeobQW7jkRVtXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;
+}
+
+
+/* latin */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(http://fonts.gstatic.com/s/opensans/v10/cJZKeOuBrn4kERxqtaUH3VtXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+}
+
+
+/* latin-ext */
+
+@font-face {
+  font-family: 'Yanone Kaffeesatz';
+  font-style: normal;
+  font-weight: 200;
+  src: local('Yanone Kaffeesatz ExtraLight'), local('YanoneKaffeesatz-ExtraLight'), url(http://fonts.gstatic.com/s/yanonekaffeesatz/v7/We_iSDqttE3etzfdfhuPRVXcACNQFE7tadwTlCQ9h9g.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;
+}
+
+
+/* latin */
+
+@font-face {
+  font-family: 'Yanone Kaffeesatz';
+  font-style: normal;
+  font-weight: 200;
+  src: local('Yanone Kaffeesatz ExtraLight'), local('YanoneKaffeesatz-ExtraLight'), url(http://fonts.gstatic.com/s/yanonekaffeesatz/v7/We_iSDqttE3etzfdfhuPRQqftcMOL_w0yR9WY4zwDNA.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+}
+
+
+/* latin-ext */
+
+@font-face {
+  font-family: 'Yanone Kaffeesatz';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Yanone Kaffeesatz Regular'), local('YanoneKaffeesatz-Regular'), url(http://fonts.gstatic.com/s/yanonekaffeesatz/v7/YDAoLskQQ5MOAgvHUQCcLV83L2yn_om9bG0a6EHWBso.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;
+}
+
+
+/* latin */
+
+@font-face {
+  font-family: 'Yanone Kaffeesatz';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Yanone Kaffeesatz Regular'), local('YanoneKaffeesatz-Regular'), url(http://fonts.gstatic.com/s/yanonekaffeesatz/v7/YDAoLskQQ5MOAgvHUQCcLfGwxTS8d1Q9KiDNCMKLFUM.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+}

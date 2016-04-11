@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html ng-app="app">
+
+<head lang="en">
+  <meta charset="UTF-8">
+  <meta name="ESPGC" content="">
+  <link rel="icon" href="favicon.ico">
+  <title id="title"></title>
+  <!-- libraries -->
+  <!-- <script src="/socket.io/socket.io.js"></script> -->
+  <!--   <link rel="stylesheet" href="animate.css">
+    -->
+  <!-- my stuff -->
+  <link rel="stylesheet" href="app.css">
+  <!-- fonts -->
+  <!--    
+    <link href="opensans.css" rel="stylesheet" type="text/css">
+    <link href="yanone_kaffeesatz.css" rel="stylesheet" />
+  -->
+
+</head>
+
+<body layout="column">
+
+  <div layout="column" class="header">
+    <div id="deviceName" class="title"></div>
+    <div class="status"></div>
+    <div id="tagline" class="subtitle"></div>
+    <div id="deviceStatus" class="info"></div>
+  </div>
+
+  </div>
+  <div class="tabs">
+    <div class="tab tab-network selected">Network</div>
+    <div class="tab tab-hardware">Hardware</div>
+    <div class="tab tab-events">Events</div>
+  </div>
+  <div id="noGots">Waiting for connection...</div>
+  <div class="tabContent tab-network">
+    <form>
+      <div layout="column" class="column">
+        <div layout="row" class="row">
+          <div class="label">
+            Version
+          </div>
+          <div class="value">
+            <input name="version" disabled value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Updated
+          </div>
+          <div class="value">
+            <input name="updated" disabled value=""><br>
+          </div>
+        </div>
+        <div class="buttons">
+          <button name="submit" class="submit">Apply</button>
+          <button name="refresh" class="refresh">Refresh</button>
+        </div>
+        <h3>Wireless Setup</h3>
+        <div layout="row" class="row">
+          <div class="label">
+            MAC
+          </div>
+          <div class="value">
+            <input name="MAC" disabled value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Network Mode
+          </div>
+          <div class="value">
+            <select name="wirelessMode">
+                        <option value="0">AdHoc</option>
+                        <option value="1">Infrastructure</option>
+                    </select>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Hostname
+            <span class="inputError hostnameError"></span>
+          </div>
+          <div class="value">
+            <input name="hostname" value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            SSID
+            <span class="inputError ssidError"></span>
+          </div>
+          <div class="value">
+            <input name="ssid" value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Passphrase
+            <span class="inputError passphraseError"></span>
+          </div>
+          <div class="value">
+            <input name="passphrase" value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            DHCP
+          </div>
+          <div class="value">
+            <input type="checkbox" name="dhcp" checked><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            IP Address
+            <span class="inputError staticIpError"></span>
+          </div>
+          <div class="value">
+            <input name="staticIp" value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Gateway
+            <span class="inputError gatewayIpError"></span>
+          </div>
+          <div class="value">
+            <input name="gatewayIp" value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Subnet Mask
+            <span class="inputError subnetMaskError"></span>
+          </div>
+          <div class="value">
+            <input name="subnetMask" value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Enable TCP
+          </div>
+          <div class="value">
+            <input type="checkbox" name="tcp" checked><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Enable Discovery
+          </div>
+          <div class="value">
+            <input type="checkbox" name="discovery" checked><br>
+          </div>
+        </div>
+        <h3>Miscellaneous</h3>
+        <div layout="row" class="row">
+          <div class="label">
+            Platform
+          </div>
+          <div class="value">
+            <input name="platform" value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Device Name
+          </div>
+          <div class="value">
+            <input name="deviceName" value=""><br>
+          </div>
+        </div>
+        <div layout="row" class="row">
+          <div class="label">
+            Tagline
+          </div>
+          <div class="value">
+            <input name="tagline" value=""><br>
+          </div>
+        </div>
+      </div>
+      <div class="networks"></div>
+    </form>
+  </div>
+  <div class="tabContent tab-hardware">
+    <form class="form">
+      <div layout="column" class="column">
+        <h3>Modules</h3>
+        <div id="modules"></div>
+        <h3>Connectors</h3>
+        <div id="connectors"></div>
+        <h3>Configuration File</h3>
+        <div id="configFile">
+          <div class="buttons">
+            <button id="saveConfigFile" class="save">Save</button>
+            <button id="loadConfigFile" class="refresh">Refresh</button>
+           <button id="restart" class="restart">Restart</button>
+         </div>
+          <div layout="row" class="row">
+            <div layout="row" class="row">
+              <textarea id="configFileText"></textarea>
+            </div>
+          </div>
+        </div>
+        <h3>IR Compressor</h3>
+        <div id="compressor">
+          <div class="buttons">
+            <button id="compress" class="save">Compress</button>
+            <button id="decompress" class="save">Decompress</button>
+            <span style="display:none">Fudge<input id="fudge" value=0></span>
+         </div>
+         <h5>Uncompressed Pairs</h5>
+          <div layout="row" class="row">
+            <div layout="row" class="row">
+              <textarea id="irRegular"></textarea>
+            </div>
+          </div>
+          <h5>Compressed Pairs</h5>
+          <div layout="row" class="row">
+            <div layout="row" class="row">
+              <textarea id="irCompressed"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="tabContent tab-events">
+    <div class="form">
+      <div layout="column" class="column">
+        <h3>Localized events/scheduling</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- libraries -->
+  <script src="balalaika.min.js"></script>
+  <script src="nanoajax.min.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
