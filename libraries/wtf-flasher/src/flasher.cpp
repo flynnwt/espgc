@@ -38,8 +38,7 @@ void Flasher::rate(unsigned long on, unsigned long off) {
   this->offMs = off;
 }
 
-// don't toggle state if opposite state ms is set to 0; allows solid on/off
-// based
+// don't toggle state if opposite state ms is set to 0; allows solid on/off based
 //  on rates in addition to set()
 void Flasher::toggleState(unsigned long nowTime) {
   if ((state && (offMs == 0)) || (!state && (onMs == 0))) {
