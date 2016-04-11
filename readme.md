@@ -237,7 +237,7 @@ module=1,IR
 connector=0,IR,1,1,5,-1
 connector=1,SensorNotify,1,2,4,-1
 connector=2,IRBlaster,1,3,5,-1
-s
+
 {
 "version":"867.5309.01",
 "platform":"ESP-12E",
