@@ -61,6 +61,11 @@ As a first attempt at programming the ESP8266, I used the Global Cache ITach as 
 * Hardware info/control/sense
   * GET /api/cmd=[gc cmd]
 
+* Macros
+  * GET /api/macro
+  * POST /api/macro
+  * DELETE /api/macro
+  
 * Configuration, Utilities
   * GET /api/config
   * POST /api/config
@@ -155,6 +160,33 @@ curl -X POST 192.168.0.100/api/admin/unlock?pw=sparty
 {
 "res":"Unlocked device"
 }
+
+# list
+curl "192.168.0.101/api/macro?list=LR_Off"
+{
+"name":"LR_Off",
+"commands":"",
+}
+# create/add
+curl -d "cmd=sendir,1:1,1,38000,1,69,341,170,21,21,21,64CCCCCBCBBBBBBCCCCCCCCBBBBBBBBC21,1517,341,85,21,3655" "192.168.0.101/api/macro?name=LR_Off"
+{
+"name":"LR_Off",
+"commands":"sendir,1:1,1,38000,1,69,341,170,21,21,21,64CCCCCBCBBBBBBCCCCCCCCBBBBBBBBC21,1517,341,85,21,3655\n"
+}
+curl -d "cmd=sendir,1:1,1,37000,10,1,128,63,16,16,16,48BBBBBBBBBBBCBBBBBBBBBCBBBBBBBBCCCCCCBBCCCCCCBC16,2712" "192.168.0.101/api/macro?name=LR_Off"
+{
+"name":"LR_Off",
+"commands":"sendir,1:1,1,38000,1,69,341,170,21,21,21,64CCCCCBCBBBBBBCCCCCCCCBBBBBBBBC21,1517,341,85,21,3655\nsendir,1:1,1,37000,10,1,128,63,16,16,16,48BBBBBBBBBBBCBBBBBBBBBCBBBBBBBBCCCCCCBBCCCCCCBC16,2712\n"
+}
+# exec
+curl "192.168.0.101/api/macro?name=LR_Off"
+{
+"name":"LR_Off",
+"commands":"sendir,1:1,1,38000,1,69,341,170,21,21,21,64CCCCCBCBBBBBBCCCCCCCCBBBBBBBBC21,1517,341,85,21,3655\nsendir,1:1,1,37000,10,1,128,63,16,16,16,48BBBBBBBBBBBCBBBBBBBBBCBBBBBBBBCCCCCCBBCCCCCCBC16,2712\n",
+"delay":100,
+"res":"completeir,1:1,1\ncompleteir,1:1,1"
+}
+
 ```
 #### Typical Output at Power On
 ```

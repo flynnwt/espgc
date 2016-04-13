@@ -22,6 +22,7 @@
 #include "status.h"
 #include "router.h"
 #include "wifi.h"      
+#include "macros.h"
 
 #define MAX_CONNECTORS (MAX_MODULES * MODULE_MAX_CONNECTORS)
 
@@ -48,6 +49,7 @@ IPAddress apIP(192, 168, 0, 1);       // for AP mode
 EspClass* esp = new EspClass();
 Config* config;
 GCIT *gc;
+Macros *macros;
 ESP8266WebServer *server;
 int enableTcp, enableDiscovery;       // deferred at start 
 Status *status;
@@ -98,6 +100,9 @@ void showtime() {
 
 void initStatus() {
 
+  // none
+  status = new Status();
+
   /*
   // using defined flash rates and controlling all together
   Flasher::Config rgbStatus[3] = {      // status (aithinker devboard rgb)
@@ -112,7 +117,23 @@ void initStatus() {
 
   /*
   //using defined states and controlling with state changes
-  unsigned int rgb[3] = { 15,12,13 };     // status (aithinker devboard rgb)
+  unsigned int led[1] = {14};     // 
+  status = new Status(led, 1);
+  unsigned long statusError[1][2] = { { 1, 0 } };             // solid 
+  unsigned long statusReset[1][2] = { { 100, 100 } };         // zippy 
+  unsigned long statusBoot[1][2] = { { 100, 900 } };          // blippy
+  unsigned long statusAP[1][2] = { { 250, 250 } };            // toggly 
+  unsigned long statusWiFi[1][2] = { { 250, 1750 } };         // pokey
+  status->defineState(Status::error, statusError, 1);
+  status->defineState(Status::reset, statusReset, 1);
+  status->defineState(Status::boot, statusBoot, 1);
+  status->defineState(Status::ap, statusAP, 1);
+  status->defineState(Status::wifi, statusWiFi, 1);
+ */
+
+  /*
+  //using defined states and controlling with state changes
+  unsigned int rgb[3] = { 15,12,13 };     // 
   status = new Status(rgb, 3);
   unsigned long statusError[3][2] = { { 1, 0 }, { 0, 0 }, { 0, 0 } };             // solid red
   unsigned long statusReset[3][2] = { { 100, 100 }, { 0, 0 }, { 0, 0 } };         // zippy red
@@ -126,8 +147,6 @@ void initStatus() {
   status->defineState(Status::wifi, statusWiFi, 3);
   */
 
-  // none
-  status = new Status();
 }
 
 // **************************************************************************************
@@ -286,13 +305,21 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
   time_t ms;
   bool OK = true;
 
+
+  Serial.print("Connecting to network...");
+  WiFi.mode(WIFI_STA);
+
+  if (!WiFi.begin(ssid.c_str(), passphrase.c_str())) {
+    Serial.print("WiFi.begin() failed!");
+    return 0;
+  }
+
   if (!dhcp) {
     WiFi.config(staticIp, gatewayIp, subnetMask);
   }
-  WiFi.begin(ssid.c_str(), passphrase.c_str());
-
+  
   ms = millis();
-  Serial.print("Connecting to network...");
+
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     if (millis() - ms > waitForWiFi) {
@@ -374,6 +401,7 @@ void setup(void) {
   config = new Config();
   config->version = VERSION;
   config->mac = MACString;
+  macros = new Macros();
 
   SPIFFS.begin();
   espInfo();

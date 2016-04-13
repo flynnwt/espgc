@@ -10,6 +10,11 @@ http://192.168.0.100/api?cmd=sendir
 http://192.168.0.100/api?cmd=getstate
 http://192.168.0.100/api?cmd=setstate
 
+macros...
+GET  http://192.168.0.100/api/macro
+POST  http://192.168.0.100/api/macro
+DELETE  http://192.168.0.100/api/macro
+
 other...
 GET  http://192.168.0.100/api/config
 *POST http://192.168.0.100/api/config
@@ -203,7 +208,7 @@ void configFilePost() {
   } else {
     code = 200; // code = 422;
     data.add("err", "Device is locked");
-  } 
+  }
   sendJSON(code, data);
 }
 
@@ -232,6 +237,92 @@ void configPost() {
   } else {
     code = 200; // code = 422;
     data.add("err", "Device is locked");
+  }
+  sendJSON(code, data);
+}
+
+// no nested macros or special commands
+void macroGet() {
+  JSON data;
+  int code, p;
+  String name, cmds, cmd, res;
+  unsigned int cmdDelay;
+
+  if (router->server->hasArg("list")) {
+    name = decodeURI(router->server->arg("list"));
+    res = macros->get(name);
+    data.add("name", name);
+    data.add("commands", res);
+    code = 200;
+  } else if (router->server->hasArg("name")) {
+    name = decodeURI(router->server->arg("name"));
+    if (router->server->hasArg("delay")) {
+      cmdDelay = router->server->arg("delay").toInt();
+    } else {
+      cmdDelay = macros->delay();
+    }
+    data.add("name", name);
+    cmds = macros->get(name);
+    data.add("commands", cmds);
+    data.add("delay", cmdDelay);
+    while (cmds.length() > 0) {
+      p = cmds.indexOf("\n");
+      if (p == -1) {
+        p = cmds.length();
+      }
+      cmd = cmds.substring(0, p);
+      cmds = cmds.substring(p + 1);
+      res += gc->doCommand(cmd) + "\n";
+      delay(cmdDelay);
+    }
+    data.add("res", res);
+    code = 200;
+  } else {
+    code = 200; // code = 422;
+    data.add("err", "Expected 'list' or 'exec' parameters");
+  }
+  sendJSON(code, data);
+}
+
+void macroPost() {
+  JSON data;
+  int code;
+  String name, res;
+
+  if (router->server->hasArg("name")) {
+    name = decodeURI(router->server->arg("name"));
+    if (router->server->hasArg("cmd")) {
+      res = macros->add(name, router->server->arg("cmd"));
+      data.add("name", name);
+      data.add("commands", res);
+      code = 200;
+    } else {
+      code = 200; // code = 422;
+      data.add("err", "Expected 'cmd' parameter");
+    }
+  } else {
+    code = 200; // code = 422;
+    data.add("err", "Expected 'name' parameter");
+  }
+  sendJSON(code, data);
+}
+
+void macroDelete() {
+  JSON data;
+  int code;
+  bool rc;
+
+  if (router->server->hasArg("name")) {
+    rc = macros->remove(decodeURI(router->server->arg("name")));
+    if (!rc) {
+      data.add("err", "Remove failed");
+    } else {
+      data.add("res", "OK");
+    }
+    code = 200;
+  } else {
+    code = 200; // code = 422;
+    data.add("err", "Expected 'list' or 'exec' parameters");
   }
   sendJSON(code, data);
 }
@@ -305,6 +396,17 @@ void Router::handleAPI() {
       return;
     } else if (method == HTTP_GET) {
       configFileGet();
+      return;
+    }
+  } else if (server->uri().equals("/api/macro")) {
+    if (method == HTTP_POST) {
+      macroPost();
+      return;
+    } else if (method == HTTP_GET) {
+      macroGet();
+      return;
+    } else if (method == HTTP_DELETE) {
+      macroDelete();
       return;
     }
   } else if (router->server->uri().equals("/api/networks")) {

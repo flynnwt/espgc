@@ -12,11 +12,14 @@
 #include "GCIT.h"
 #include "wifi.h"
 #include "config.h" 
+#include "macros.h"
 
 class Router;
 
 extern Router* router;
 extern Config* config;
+extern Macros* macros;
+
 extern String getConfigFile();
 extern void saveConfig();
 extern void saveReloadConfig(String text);
