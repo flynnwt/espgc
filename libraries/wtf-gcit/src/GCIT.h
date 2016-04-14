@@ -202,7 +202,6 @@ class GCIT {
   uint8_t MAC[6];
   IPAddress ipAddr; 
   WiFiServer *server;
-  WiFiClient serverClients[MAX_TCP_CLIENTS];
   WiFiClient serverClient[MAX_TCP_CLIENTS];
   bool serverClientActive[MAX_TCP_CLIENTS];
 

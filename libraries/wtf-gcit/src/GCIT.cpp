@@ -434,14 +434,6 @@ void GCIT::tcpCommands(String cmds, WiFiClient *client) {
   String req;
 
   while (cmds.length() > 0) {
-    /*
-    p = cmds.indexOf("\r\n");
-    if (p == -1) { // bad format
-      p = cmds.length();
-    }
-    req = cmds.substring(0, p + 2);
-    cmds = cmds.substring(p + 2);
-    */
     p = cmds.indexOf("\r");
     if (p == -1) { // bad format
       p = cmds.length();
@@ -475,12 +467,14 @@ void GCIT::handleClient() {
           Serial.println(i);
           serverClient[i] = server->available();
           ok = true;
+          break;
         } else if (!serverClientActive[i]) {
           Serial.print("TCP: inserting client ");
           Serial.println(i);
           serverClient[i] = server->available();
           serverClientActive[i] = true;
           ok = true;
+          break;
         }
       }
       // no free spot - deny or close by lru?
