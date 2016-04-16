@@ -1,7 +1,7 @@
 #include "router.h"
 
 /*
-connector commands, GET (same format as TCP)...
+connector commands, GET/POST (same format as TCP)...
 http://192.168.0.100/api?cmd=getdevices
 http://192.168.0.100/api?cmd=getversion
 http://192.168.0.100/api?cmd=get_NET,0:1
@@ -25,6 +25,8 @@ GET  http://192.168.0.100/api/compressir
 GET  http://192.168.0.100/api/decompressir
 
 *POST http://192.168.0.100/api/admin/restart
+*GET http://192.168.0.100/api/admin/file
+*POST http://192.168.0.100/api/admin/file
 *DELETE http://192.168.0.100/api/admin/file
 POST http://192.168.0.100/api/admin/lock
 POST http://192.168.0.100/api/admin/unlock
@@ -377,10 +379,131 @@ void decompressIrGet() {
   sendJSON(code, data);
 }
 
+void fileGet() {
+  JSON data;
+  String res = "", file;
+  int code;
+  File f;
+
+  if (!config->locked) {
+    if (router->server->hasArg("file")) {
+      file = decodeURI(router->server->arg("file"));
+      if (file.charAt(0) != '/') {
+        file = "/" + file;
+      }
+      if (SPIFFS.exists(file)) {
+        f = SPIFFS.open(file, "r");
+        if (f) {
+          res = f.readString();
+          f.close();
+          data.add("name", file);
+          data.add("data", res);
+          code = 200;
+        } else {
+          data.add("err", "Open failed");
+          code = 200; // code = 422
+        }
+      } else {
+        data.add("err", "File doesn't exist");
+        code = 200; // code = 422
+      }
+    } else {
+      data.add("err", "Expected 'file' parameter");
+      code = 200; // code = 422
+    }
+  } else {
+    data.add("err", "Device is locked");
+    code = 200; // code = 422
+  }
+  sendJSON(code, data);
+
+}
+
+void filePost() {
+  JSON data;
+  String res = "", file;
+  int code;
+  File f;
+
+  if (!config->locked) {
+    if (router->server->hasArg("file")) {
+      if (router->server->hasArg("data")) {
+        file = decodeURI(router->server->arg("file"));
+        if (file.charAt(0) != '/') {
+          file = "/" + file;
+        }
+        if (!SPIFFS.exists(file)) {
+          f = SPIFFS.open(file, "w");
+          if (f) {
+            f.print(decodeURI(router->server->arg("data")));
+            f.close();
+            data.add("name", file);
+            data.add("data", decodeURI(router->server->arg("data")));
+            code = 200;
+          } else {
+            data.add("err", "Open failed");
+            code = 200; // code = 422
+          }
+        } else {
+          data.add("err", "File exists - not overwriting");
+          code = 200; // code = 422
+        }
+      } else {
+        data.add("err", "Expected 'data' parameter");
+        code = 200; // code = 422
+      }
+    } else {
+      data.add("err", "Expected 'file' parameter");
+      code = 200; // code = 422
+    }
+  } else {
+    data.add("err", "Device is locked");
+    code = 200; // code = 422
+  }
+  sendJSON(code, data);
+
+}
+
+void fileDelete() {
+  JSON data;
+  String res = "", file;
+  int code;
+
+  if (!config->locked) {
+    if (router->server->hasArg("file")) {
+      file = decodeURI(router->server->arg("file"));
+      if (file.charAt(0) != '/') {
+        file = "/" + file;
+      }
+      // must be blind; don't see way to tell if it's a dir or file; appears to only work on file - at least / don't work...
+      if (SPIFFS.exists(file)) {
+        if (SPIFFS.remove(file)) {
+          data.add("res", "OK");
+          code = 200;
+        } else {
+          data.add("err", "Delete failed");
+          code = 200; // code = 422
+        }
+      } else {
+        data.add("err", "File doesn't exist");
+        code = 200; // code = 422
+      }
+    } else {
+      data.add("err", "Expected 'file' parameter");
+      code = 200; // code = 422
+    }
+  } else {
+    data.add("err", "Device is locked");
+    code = 200; // code = 422
+  }
+  sendJSON(code, data);
+
+}
+
 void Router::handleAPI() {
   JSON data;
   String res = "", file;
-  int code, rc, method = server->method();
+  int code, method = server->method();
 
   if (server->uri().equals("/api/config")) {
     if (method == HTTP_POST) {
@@ -462,34 +585,15 @@ void Router::handleAPI() {
       }
       return;
     }
-  } else if (router->server->uri().substring(0, 16).equals("/api/admin/file")) {
-    if (method == HTTP_DELETE) {
-      if (!config->locked) {
-        if (router->server->hasArg("file")) {
-          file = decodeURI(router->server->arg("file"));
-          // must be blind; don't see way to tell if it's a dir or file; appears to only work on file - at least / don't work...
-          if (SPIFFS.exists(file)) {
-            rc = SPIFFS.remove(file);
-            if (rc == 1) {
-              data.add("res", "OK");
-              code = 200;
-            } else {
-              data.add("err", "Delete failed");
-              code = 200; // code = 422
-            }
-          } else {
-            data.add("err", "File doesn't exist");
-            code = 200; // code = 422
-          }
-        } else {
-          data.add("err", "Expected 'file' parameter");
-          code = 200; // code = 422
-        }
-      } else {
-        data.add("err", "Device is locked");
-        code = 200; // code = 422
-      }
-      sendJSON(code, data);
+  } else if (router->server->uri().equals("/api/admin/file")) {
+    if (method == HTTP_GET) {
+      fileGet();
+      return;
+    } else if (method == HTTP_POST) {
+      filePost();
+      return;
+    } else if (method == HTTP_DELETE) {
+      fileDelete();
       return;
     }
   } else  if (router->server->uri().equals("/api")) {           // all cmd= types 

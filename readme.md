@@ -79,6 +79,8 @@ As a first attempt at programming the ESP8266, I used the Global Cache ITach as 
   * POST /api/admin/lock
   * POST /api/admin/unlock
   * POST /api/admin/restart
+  * GET /api/admin/file
+  * POST /api/admin/file
   * DELETE /api/admin/file
   
   
