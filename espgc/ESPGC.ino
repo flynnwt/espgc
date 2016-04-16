@@ -34,6 +34,7 @@ String resetFile = "/reset.txt";      // reset info
 String statusFile = "/status.txt";    // boot info
 String lockFile = "/lock.txt";        // lock info
 String configFile = "/config.txt";    // user setup
+String ledFile = "/led.txt";          // status led info
 
 // now could be saved in configFile too...
 unsigned int httpPort = 80;
@@ -99,9 +100,72 @@ void showtime() {
 }
 
 void initStatus() {
+  File f;
+  String text;
+  unsigned int p, mode = 0;
+  unsigned int pins[3] = { 15, 12, 13 };
 
-  // none
-  status = new Status();
+  f = SPIFFS.open(ledFile, "r");
+  if (f) {
+    text = f.readString();
+    f.close();
+    if ((p = text.indexOf(",")) != -1) {
+      mode = text.substring(0, p).toInt();
+      text = text.substring(p + 1);
+      if ((p = text.indexOf(",")) != -1) {
+        pins[0] = text.substring(0, p).toInt();
+        text = text.substring(p + 1);
+        if ((p = text.indexOf(",")) != -1) {
+          pins[1] = text.substring(0, p).toInt();
+          text = text.substring(p + 1);
+          pins[2] = text.substring(0, p).toInt();
+        } else {
+          pins[1] = text.toInt();
+        }
+      } else {
+        pins[0] = text.toInt();
+      }
+    } else {
+      mode = text.toInt();
+    }
+  }
+  Serial.printf("initStatus(): mode=%i, pins=%i %i %i\n", mode, pins[0], pins[1], pins[2]);
+
+  if (mode == 1) {
+
+    //using defined states and controlling with state changes
+    status = new Status(pins, 1);
+    unsigned long statusError[1][2] = { { 1, 0 } };             // solid 
+    unsigned long statusReset[1][2] = { { 100, 100 } };         // zippy 
+    unsigned long statusBoot[1][2] = { { 100, 900 } };          // blippy
+    unsigned long statusAP[1][2] = { { 250, 250 } };            // toggly 
+    unsigned long statusWiFi[1][2] = { { 250, 1750 } };         // pokey
+    status->defineState(Status::error, statusError, 1);
+    status->defineState(Status::reset, statusReset, 1);
+    status->defineState(Status::boot, statusBoot, 1);
+    status->defineState(Status::ap, statusAP, 1);
+    status->defineState(Status::wifi, statusWiFi, 1);
+
+  } else if (mode == 3) {
+
+    //using defined states and controlling with state changes
+    status = new Status(pins, 3);
+    unsigned long statusError[3][2] = { { 1, 0 },{ 0, 0 },{ 0, 0 } };             // solid red
+    unsigned long statusReset[3][2] = { { 100, 100 },{ 0, 0 },{ 0, 0 } };         // zippy red
+    unsigned long statusBoot[3][2] = { { 100, 900 },{ 0, 0 },{ 0, 0 } };          // blippy red
+    unsigned long statusAP[3][2] = { { 100, 100 },{ 100, 100 },{ 100, 100 } };    // zippy white
+    unsigned long statusWiFi[3][2] = { { 250, 1750 },{ 0,0 },{ 250, 1750 } };     // pokey purple
+    status->defineState(Status::error, statusError, 3);
+    status->defineState(Status::reset, statusReset, 3);
+    status->defineState(Status::boot, statusBoot, 3);
+    status->defineState(Status::ap, statusAP, 3);
+    status->defineState(Status::wifi, statusWiFi, 3);
+
+  } else {
+
+    status = new Status();
+
+  }
 
   /*
   // using defined flash rates and controlling all together
@@ -113,38 +177,6 @@ void initStatus() {
   status = new Status(rgbStatus, 3);
   status->set(1);
   status->start();
-  */
-
-  /*
-  //using defined states and controlling with state changes
-  unsigned int led[1] = {14};     // 
-  status = new Status(led, 1);
-  unsigned long statusError[1][2] = { { 1, 0 } };             // solid 
-  unsigned long statusReset[1][2] = { { 100, 100 } };         // zippy 
-  unsigned long statusBoot[1][2] = { { 100, 900 } };          // blippy
-  unsigned long statusAP[1][2] = { { 250, 250 } };            // toggly 
-  unsigned long statusWiFi[1][2] = { { 250, 1750 } };         // pokey
-  status->defineState(Status::error, statusError, 1);
-  status->defineState(Status::reset, statusReset, 1);
-  status->defineState(Status::boot, statusBoot, 1);
-  status->defineState(Status::ap, statusAP, 1);
-  status->defineState(Status::wifi, statusWiFi, 1);
- */
-
-  /*
-  //using defined states and controlling with state changes
-  unsigned int rgb[3] = { 15,12,13 };     // 
-  status = new Status(rgb, 3);
-  unsigned long statusError[3][2] = { { 1, 0 }, { 0, 0 }, { 0, 0 } };             // solid red
-  unsigned long statusReset[3][2] = { { 100, 100 }, { 0, 0 }, { 0, 0 } };         // zippy red
-  unsigned long statusBoot[3][2] = { { 100, 900 }, { 0, 0 }, { 0, 0 } };          // blippy red
-  unsigned long statusAP[3][2] = { { 100, 100 }, { 100, 100 }, { 100, 100 } };    // zippy white
-  unsigned long statusWiFi[3][2] = { { 250, 1750 }, { 0,0 }, { 250, 1750 } };     // pokey purple
-  status->defineState(Status::error, statusError, 3);
-  status->defineState(Status::reset, statusReset, 3);
-  status->defineState(Status::boot, statusBoot, 3);
-  status->defineState(Status::ap, statusAP, 3);
-  status->defineState(Status::wifi, statusWiFi, 3);
   */
 
 }
@@ -238,7 +270,7 @@ void saveConfig(String text, String prepend) {
   File f;
 
   Serial.printf("Saving configuration %s...\n", configFile.c_str());
-  SPIFFS.remove(configFile);
+  SPIFFS.remove(configFile);  // shouldn't need this?
   f = SPIFFS.open(configFile, "w");
   if (!f) {
     Serial.printf("Could not create %s.\n", configFile.c_str());
@@ -317,7 +349,7 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
   if (!dhcp) {
     WiFi.config(staticIp, gatewayIp, subnetMask);
   }
-  
+
   ms = millis();
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -388,6 +420,8 @@ void setup(void) {
   int i, j, rc;
   String MACString, configText;
 
+  SPIFFS.begin();
+
   Serial.begin(115200);
   Serial.setDebugOutput(false); // WIFI libraries, etc.
 
@@ -403,7 +437,6 @@ void setup(void) {
   config->mac = MACString;
   macros = new Macros();
 
-  SPIFFS.begin();
   espInfo();
   fsInfo();
 
@@ -414,6 +447,7 @@ void setup(void) {
   // Persistent Configuration 
   Serial.println("\n\n*** Configuration\n");
   bootCheck();
+  status->process();
 
   if (!SPIFFS.exists(configFile)) {
     Serial.printf("Configuration file %s does not exist.  Creating...\n", configFile.c_str());
@@ -422,8 +456,10 @@ void setup(void) {
 
   Serial.printf("\nCurrent configuration:\n");
   configText = getConfigFile();
+  status->process();
   Serial.print(configText);
   loadConfig(configText, true);
+  status->process();
 
   Serial.print("\nChecking lock: ");
   if (lockCheck()) {
@@ -434,7 +470,10 @@ void setup(void) {
   Serial.println();
 
   // let stuff get to console before crash....
-  delay(1000);
+  for (i = 0; i < 20; i++) {
+    status->process();
+    delay(50);
+  }
 
   Serial.println("\n\n*** Hardware Configuration\n");
 
@@ -574,8 +613,8 @@ connector=0,IR,1,1,5,-1
 connector=1,SensorNotify,1,2,4,-1
 connector=2,IRBlaster,1,3,5,-1
 
-GCIT *gc2; 
-gc2 = new GCIT(ModuleType::wifi);  
+GCIT *gc2;
+gc2 = new GCIT(ModuleType::wifi);
 Module *gc2m = gc->addModule(ModuleType::ir);
 gc2m->addConnector(ConnectorType::ir, 5, -1);
 gc2m->addConnector(ConnectorType::sensorNotify, 4,-1);
