@@ -27,14 +27,14 @@ ConnectorSensor::ConnectorSensor(Connector *c, int fPin, int sPin) {
   parent = c;
   fcnPin = fPin;
   statusPin = sPin;
-  if (fcnPin != -1) {
+  if (fcnPin != UNDEFINED_FPIN) {
     if (fcnPin != 16) {
       pinMode(fcnPin, INPUT_PULLUP);
     } else {
       pinMode(fcnPin, INPUT_PULLDOWN_16);
     }
   }
-  if (statusPin != -1) {
+  if (statusPin != UNDEFINED_SPIN) {
     pinMode(statusPin, OUTPUT);
   }
   state = digitalRead(fcnPin);
@@ -54,25 +54,27 @@ ConnectorSensorNotify::ConnectorSensorNotify(Connector *c, int fPin, int sPin) {
   interval = 60000;
   fcnPin = fPin;
   statusPin = sPin;
-  if (fcnPin != -1) {
+  if (fcnPin != UNDEFINED_FPIN) {
     if (fcnPin != 16) {
       pinMode(fcnPin, INPUT_PULLUP);
     } else {
       pinMode(fcnPin, INPUT_PULLDOWN_16);
     }
   }
-  if (statusPin != -1) {
+  if (statusPin != UNDEFINED_SPIN) {
     pinMode(statusPin, OUTPUT);
   }
   state = digitalRead(fcnPin);
 }
 
-void ConnectorSensorNotify::setInterval(unsigned long ms) { interval = ms; }
+void ConnectorSensorNotify::setInterval(unsigned long ms) {
+  interval = ms;
+}
 
 void ConnectorSensorNotify::update() {
   unsigned int prevState = state;
 
-  if (fcnPin != -1) {
+  if (fcnPin != UNDEFINED_FPIN) {
     state = digitalRead(fcnPin);
 
     if ((state != prevState) || ((interval != 0) && (millis() >= timer + interval))) {
@@ -88,19 +90,37 @@ ConnectorRelay::ConnectorRelay(Connector *c, int fPin, int sPin) {
   parent = c;
   fcnPin = fPin;
   statusPin = sPin;
-  if (fcnPin != -1) {
-    pinMode(fcnPin, OUTPUT);
+  if (fcnPin > 0) {
+    state = 0;
+  } else {
+    state = 1;
   }
-  if (statusPin != -1) {
+  if (fcnPin != UNDEFINED_FPIN) {
+    pinMode(fcnPin, OUTPUT);
+    digitalWrite(fcnPin, state);
+  }
+  if (statusPin != UNDEFINED_SPIN) {
     pinMode(statusPin, OUTPUT);
   }
-  state = 0;
-  digitalWrite(fcnPin, state);
 }
 
 void ConnectorRelay::setState(unsigned int s) {
-  state = s;
-  digitalWrite(fcnPin, state);
+  if (s != 0) {
+    if (fcnPin > 0) {
+      state = 1;
+    } else {
+      state = 0;
+    }
+  } else {
+    if (fcnPin > 0) {
+      state = 0;
+    } else {
+      state = 1;
+    }
+  }
+  if (fcnPin != UNDEFINED_FPIN) {
+    digitalWrite(fcnPin, state);
+  }
 }
 
 unsigned int ConnectorRelay::getState() {

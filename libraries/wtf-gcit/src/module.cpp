@@ -38,9 +38,9 @@ Module::Module(GCIT *p, unsigned int a, ModuleType t) {
   }
 }
 
-int Module::addConnector(ConnectorType t) { return addConnector(t, -1, -1); }
+int Module::addConnector(ConnectorType t) { return addConnector(t, UNDEFINED_FPIN, UNDEFINED_SPIN); }
 
-int Module::addConnector(ConnectorType t, int fPin) { return addConnector(t, fPin, -1); }
+int Module::addConnector(ConnectorType t, int fPin) { return addConnector(t, fPin, UNDEFINED_SPIN); }
 
 int Module::addConnector(ConnectorType t, int fPin, int sPin) { return addConnector(t, numConnectors + 1, fPin, sPin); }
 

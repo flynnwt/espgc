@@ -19,6 +19,11 @@
 #define MAX_MODULES 8
 #define MODULE_MAX_CONNECTORS 8
 
+#define UNDEFINED_MOD -1
+#define UNDEFINED_CONN -1
+#define UNDEFINED_FPIN 128  // allow negative values for relay out negative-active 
+#define UNDEFINED_SPIN -1
+
 enum class ModuleType { wifi, ethernet, ir, serial, relay };
 enum class ConnectorType {
   ir,
@@ -38,8 +43,8 @@ class Connector;
 class ConnectorControl {
 public:
   Connector *parent;
-  int fcnPin = -1;
-  int statusPin = -1;
+  int fcnPin = UNDEFINED_FPIN;
+  int statusPin = UNDEFINED_SPIN;
 
   ConnectorControl() {}
   ConnectorControl(Connector *c);
@@ -62,7 +67,6 @@ public:
   ConnectorIr(Connector *parent, int fPin);
   ConnectorIr(Connector *parent, int fPin, int sPin);
   void sendIRRaw(unsigned int Hz, unsigned int len, unsigned int irSignal[]);
-  ;
   void sendIRRaw(unsigned int Hz, unsigned int len, unsigned int irSignal[],
                  unsigned int offset);
 };
@@ -220,7 +224,6 @@ class GCIT {
   void discovery();
   void checkSensors();
   void handleClient();
-  //void handleClient2();
 
 public:
   void (*broadcastHandler)(String res) = NULL;

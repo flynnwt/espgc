@@ -4,22 +4,26 @@
 sendir,1:1,1,37000,10,1,128,64,16,16,16,49,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,49,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,49,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,49,16,16,16,49,16,49,16,49,16,49,16,16,16,16,16,49,16,16,16,49,16,49,16,49,16,49,16,16,16,49,16,2718
 */
 
-ConnectorIr::ConnectorIr(Connector *c) { ConnectorIr(c, -1, -1); }
+ConnectorIr::ConnectorIr(Connector *c) {
+  ConnectorIr(c, UNDEFINED_FPIN, UNDEFINED_SPIN);
+}
 
-ConnectorIr::ConnectorIr(Connector *c, int fPin) { ConnectorIr(c, fPin, -1); }
+ConnectorIr::ConnectorIr(Connector *c, int fPin) {
+  ConnectorIr(c, fPin, UNDEFINED_SPIN);
+}
 
 ConnectorIr::ConnectorIr(Connector *c, int fPin, int sPin) {
   parent = c;
   fcnPin = fPin;
   statusPin = sPin;
-  if (fcnPin != -1) {
+  if (fcnPin != UNDEFINED_FPIN) {
     pinMode(fcnPin, OUTPUT);
     irSend = new IRsend(fcnPin);
     if (irSend) {
       irSend->begin();
     }
   }
-  if (statusPin != -1) {
+  if (statusPin != UNDEFINED_SPIN) {
     pinMode(statusPin, OUTPUT);
   }
 }
@@ -27,7 +31,7 @@ ConnectorIr::ConnectorIr(Connector *c, int fPin, int sPin) {
 String GCIT::doIR(String req, WiFiClient *client) {
   int i, period;
   String res;
-  //char colon, comma;
+  // char colon, comma;
   char mod, conn;
   String rest, err;
   unsigned int id, freq, repeat, offset, codeLen;
@@ -36,9 +40,9 @@ String GCIT::doIR(String req, WiFiClient *client) {
   Connector *connector;
 
   mod = req.charAt(7);
-  //colon = req.charAt(8);
+  // colon = req.charAt(8);
   conn = req.charAt(9);
-  //comma = req.charAt(10);
+  // comma = req.charAt(10);
   rest = req.substring(11);
 
   // done before call here
@@ -123,32 +127,32 @@ String GCIT::doIR(String req, WiFiClient *client) {
     res += "\r";
     tcpResponse(res, client);
   }
-  Serial.print("doIr(");
-  Serial.print(req);
-  Serial.println(")");
-  Serial.println(fixup(res));
   return res;
 }
 
 // for web/api
-String GCIT::compressIr(String pairs) { return CompressedIR().encode(pairs); }
+String GCIT::compressIr(String pairs) {
+  return CompressedIR().encode(pairs);
+}
 
-String GCIT::compressIr(String s, unsigned int f) { return CompressedIR().encode(s, f); }  // not really useful unless doing learning and using raw timings (before converting to period counts)
+// not really useful unless doing learning and using raw timings (before converting to period counts)
+String GCIT::compressIr(String s, unsigned int f) {
+  return CompressedIR().encode(s, f);
+} 
 
-String GCIT::decompressIr(String pairs) { return CompressedIR().decode(pairs); }
+String GCIT::decompressIr(String pairs) {
+  return CompressedIR().decode(pairs);
+}
 
 // IR Connectors
 
-void ConnectorIr::sendIRRaw(unsigned int Hz, unsigned int len, unsigned int irSignal[]) { sendIRRaw(Hz, len, irSignal, 0); }
+void ConnectorIr::sendIRRaw(unsigned int Hz, unsigned int len, unsigned int irSignal[]) {
+  sendIRRaw(Hz, len, irSignal, 0);
+}
 
 void ConnectorIr::sendIRRaw(unsigned int Hz, unsigned int len, unsigned int irSignal[], unsigned int offset) {
   setStatus(HIGH);
   if (irSend) {
-    Serial.print("sendIRRaw(): ");
-    Serial.print(len);
-    Serial.print(" bytes @ ");
-    Serial.print(Hz);
-    Serial.println("Hz");
     noInterrupts();
     irSend->sendRaw(&irSignal[offset], len, (unsigned int)(Hz / 1000));
     interrupts();
@@ -167,7 +171,7 @@ void ConnectorIr::sendIRRaw(unsigned int Hz, unsigned int len, unsigned int irSi
 // string starts with on
 // string ends with off or var
 //
-// fudge used with raw timings (learned) to smooth samples 
+// fudge used with raw timings (learned) to smooth samples
 
 unsigned int CompressedIR::getInt(String s) {
   unsigned int res = 0;
@@ -183,11 +187,17 @@ unsigned int CompressedIR::getInt(String s) {
   return res;
 }
 
-bool CompressedIR::isVar(String s) { return (s.charAt(p) >= 'A') && (s.charAt(p) <= 'Z'); }
+bool CompressedIR::isVar(String s) {
+  return (s.charAt(p) >= 'A') && (s.charAt(p) <= 'Z');
+}
 
-unsigned int CompressedIR::codePos(char c) { return c - 'A'; }
+unsigned int CompressedIR::codePos(char c) {
+  return c - 'A';
+}
 
-char CompressedIR::codeName(unsigned int n) { return n + 'A'; }
+char CompressedIR::codeName(unsigned int n) {
+  return n + 'A';
+}
 
 char CompressedIR::checkPair(unsigned int on, unsigned int off) {
   int i;
@@ -247,9 +257,13 @@ char CompressedIR::addPairUnique(unsigned int on, unsigned int off) {
   }
 }
 
-unsigned int CompressedIR::getPair0(char c) { return library[codePos(c)][0]; }
+unsigned int CompressedIR::getPair0(char c) {
+  return library[codePos(c)][0];
+}
 
-unsigned int CompressedIR::getPair1(char c) { return library[codePos(c)][1]; }
+unsigned int CompressedIR::getPair1(char c) {
+  return library[codePos(c)][1];
+}
 
 // assume well-formed
 // returns uncompressed form

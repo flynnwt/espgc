@@ -43,7 +43,7 @@ ModuleType GCIT::getModuleType(String t) {
   } else if (t == "relay") {
     return ModuleType::relay;
   } else {
-    return (ModuleType)-1;
+    return (ModuleType)UNDEFINED_MOD;
   }
 }
 
@@ -87,7 +87,7 @@ ConnectorType GCIT::getConnectorType(String t) {
   } else if (t == "relay") {
     return ConnectorType::relay;
   } else {
-    return (ConnectorType)-1;
+    return (ConnectorType)UNDEFINED_CONN;
   }
 }
 
