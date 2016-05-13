@@ -3,6 +3,19 @@
 void GCIT::init() {
   int i;
 
+  // this DOESN'T WORK! (defaulting to Serial doesn't work when serial is a Log)
+  // seems like the only way for it to work is to have serial be dynamic type at compile
+  //  (HardwareSerial or Log), but don't know how to get that to happen 
+  // had to do it this way because if serial is HardwareSerial, the Log methods don't hide
+  //  the base class (HardwareSerial) methods because they aren't virtual (I think); so
+  //  this lib needs to know about logger anyway (can't just set serial to a HardwareSerial or Log
+  //  in user code)
+  // only other way is to create a printf() here, always use it, and have it check if
+  //  logger is non-NULL to decide serial vs logger
+  // serial = (Log *)&Serial;
+
+  serial = &Serial;
+  logger = NULL;
   server = NULL;
   state.enableTcp = false;
   state.tcpPort = 4998;
@@ -28,6 +41,23 @@ GCIT::GCIT(ModuleType t) {
   addModule(t);
   init();
   //}
+}
+
+// use to select between 'normal' serial output and logger output; 
+void GCIT::printf(const char *format, ...) {
+  size_t len = 0;
+  va_list arg;
+  char temp[1460];
+
+  va_start(arg, format);
+  len = ets_vsnprintf(temp, 1460, format, arg);
+  va_end(arg);
+
+  if (logger != NULL) {
+    logger->print(temp);
+  } else {
+    serial->print(temp);
+  }
 }
 
 ModuleType GCIT::getModuleType(String t) {
@@ -194,7 +224,7 @@ void GCIT::sensorNotify(ConnectorSensorNotify *c) {
   if (state.enableTcp) {
     String res = "sensornotify," + String(c->parent->parent->address) + ":" + String(c->parent->address) + "," +
                  String(c->state); // manual wrong, says ':' between state
-    Serial.println(res);
+    printf("%s\n", res.c_str());
     udp.beginPacketMulticast(*state.notifyIp, state.notifyPort, ipAddr);
     udp.print(res);
     udp.endPacket();
@@ -224,8 +254,7 @@ void GCIT::discovery() {
     res += ipString(ipAddr);
     res += "><-PCB_PN=025-0026-06><-Status=Ready>\r";
 
-    Serial.println("discovery beacon:");
-    Serial.println(res);
+    printf("discovery beacon:\n%s\n", res.c_str());
     udp.beginPacketMulticast(*state.beaconIp, state.beaconPort, ipAddr);
     udp.print(res);
     udp.endPacket();
@@ -328,6 +357,8 @@ String GCIT::doCommand(String req, WiFiClient *client) {
             } else {
               noResponse = true; // ir will respond
               res = doIR(req, client);
+              printf("doIr(%s)\n", req.c_str());
+              printf("%s\n", fixup(res).c_str());
             }
           }
         }
@@ -417,8 +448,7 @@ String GCIT::doCommand(String req, WiFiClient *client) {
 
 void GCIT::tcpResponse(String res, WiFiClient *client) {
   client->print(res);
-  Serial.print("TCP response: ");
-  Serial.println(fixup(res));
+  printf("TCP response: %s\n", fixup(res).c_str());
   client->flush();
 }
 
@@ -460,17 +490,14 @@ void GCIT::handleClient() {
     if (server->hasClient()) {
       for (i = 0; i < MAX_TCP_CLIENTS; i++) {
         if (serverClientActive[i] && !serverClient[i].connected()) {
-          Serial.print("TCP: stopping old client ");
-          Serial.println(i);
+          printf("TCP: stopping old client %i\n", i);
           serverClient[i].stop();
-          Serial.print("TCP: replacing with new client ");
-          Serial.println(i);
+          printf("TCP: replacing with new client\n");
           serverClient[i] = server->available();
           ok = true;
           break;
         } else if (!serverClientActive[i]) {
-          Serial.print("TCP: inserting client ");
-          Serial.println(i);
+          printf("TCP: inserting client %i\n", i);
           serverClient[i] = server->available();
           serverClientActive[i] = true;
           ok = true;
@@ -479,7 +506,7 @@ void GCIT::handleClient() {
       }
       // no free spot - deny or close by lru?
       if (!ok) {
-        Serial.println("TCP: ignoring new client!");
+        printf("TCP: ignoring new client!\n");
         WiFiClient serverClient = server->available();
         serverClient.stop();
       }
@@ -489,15 +516,11 @@ void GCIT::handleClient() {
       if (serverClientActive[i] && serverClient[i].connected()) {
         if (serverClient[i].available()) {
           req = serverClient[i].readString();
-          Serial.print("TCP request(");
-          Serial.print(i);
-          Serial.print("): ");
-          Serial.println(fixup(req));
+          printf("TCP request(%i): %s\n", i, fixup(req).c_str());
           tcpCommands(req, &serverClient[i]);
         }
       } else if (serverClientActive[i] && !serverClient[i].connected()) {
-        Serial.print("TCP: deleting disconnected client ");
-        Serial.println(i);
+        printf("TCP: deleting disconnected client %i\n", i);
         serverClient[i].stop();
         serverClientActive[i] = false;
       }

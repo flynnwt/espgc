@@ -7,12 +7,15 @@
 #include <WiFiUDP.h>
 #include <IRremoteESP8266.h>
 
+#include <utilities.h>
+#include <logger.h>
+
 #include "GCITCodes.h"
-#include "utilities.h"
 #include "localutilities.h"
 #include "ir.h"
 #include "module.h"
 #include "contact.h"
+#include "serial.h"
 #include "connector.h"
 
 #define MAX_TCP_CLIENTS 3
@@ -224,8 +227,12 @@ class GCIT {
   void discovery();
   void checkSensors();
   void handleClient();
+  void printf(const char* format, ...);
 
 public:
+  HardwareSerial *serial;
+  Log *logger;
+
   void (*broadcastHandler)(String res) = NULL;
   GCIT();
   GCIT(ModuleType t);
