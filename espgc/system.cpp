@@ -6,26 +6,23 @@ void espInfo() {
   EspClass* e = new EspClass();
   Serial.println("ESP Info: ");
   Serial.print(" VCC: ");
-  Serial.println(e->getVcc());
+  Serial.printf("%i\n", e->getVcc());
   Serial.print(" Frequency: ");
-  Serial.println(e->getCpuFreqMHz());
+  Serial.printf("%i\n", e->getCpuFreqMHz());
   Serial.print(" Free Heap: ");
-  Serial.println(e->getFreeHeap());
+  Serial.printf("%i\n", e->getFreeHeap());
   Serial.print(" SDK: ");
-  Serial.println(e->getSdkVersion());
+  Serial.printf("%s\n", e->getSdkVersion());
   Serial.print(" Boot Version: ");
-  Serial.println(e->getBootVersion());
+  Serial.printf("%i\n", e->getBootVersion());
   Serial.print(" Boot Mode: ");
-  Serial.println(e->getBootMode());
+  Serial.printf("%i\n", e->getBootMode());
 
   Serial.print(" Flash: ");
-  Serial.print(e->getFlashChipId(), HEX);
-  Serial.print(",");
-  Serial.print(e->getFlashChipSize());  // this is from config, not flash chip id decode!!!
-  Serial.print(",");
-  Serial.print(e->getFlashChipSpeed());
-  Serial.print(",");
-  Serial.println(e->getFlashChipMode());
+  Serial.printf("%i,", e->getFlashChipId(), HEX);
+  Serial.printf("%i,", e->getFlashChipSize());  // this is from config, not flash chip id decode!!!
+  Serial.printf("%i,", e->getFlashChipSpeed());
+  Serial.printf("%i\n", e->getFlashChipMode());
 }
 
 void fsInfo() {

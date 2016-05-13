@@ -3,6 +3,8 @@
 #include <ESP8266WiFi.h>
 #include "utilities.h"
 
+#include "log.h"
+
 int startAP(String ssid);
 
 

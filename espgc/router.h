@@ -9,7 +9,9 @@
 #include <ESP.h>
 #include <FS.h>
 
-#include "GCIT.h"
+#include <GCIT.h>
+
+#include "log.h"
 #include "wifi.h"
 #include "config.h" 
 #include "macros.h"
