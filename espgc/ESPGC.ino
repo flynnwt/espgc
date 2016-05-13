@@ -12,6 +12,10 @@
 #include <Time.h>
 #include <IRremoteESP8266.h>
 
+#include <logger.h>
+#include "log.h"
+Log logger;
+
 #include <utilities.h>
 #include <GCIT.h>
 #include <ntp.h>   
@@ -93,7 +97,6 @@ void showtime() {
         latency = (millis() - startTime) / (loops / 1000);
       }
       prevDisplay = now();
-      // hmmm...i dont think it's leaking anymore
       Serial.printf("\n*** %s free:%i lat:%ius (boot: %s)\n\n", ntpTimestamp().c_str(), esp->getFreeHeap(), latency, startTimestamp.c_str());
     }
   }
@@ -102,7 +105,7 @@ void showtime() {
 void initStatus() {
   File f;
   String text;
-  unsigned int p, mode = 0;
+  int p, mode = 0;
   unsigned int pins[3] = { 15, 12, 13 };
 
   f = SPIFFS.open(ledFile, "r");
@@ -179,6 +182,10 @@ void initStatus() {
   status->start();
   */
 
+}
+
+void debugCommand(String cmd) {
+  Serial.printf("Got debug command '%s'\n", fixup(cmd).c_str());
 }
 
 // **************************************************************************************
@@ -331,18 +338,16 @@ int startAP(String ssid) {
   return 1;
 }
 
-// it looks like esp remembers previous ssid/passphrase - you can restart it w/o specifying them and it connects!!!
 int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPAddress gatewayIp, IPAddress subnetMask) {
   IPAddress ipAddr;
   time_t ms;
   bool OK = true;
 
 
-  Serial.print("Connecting to network...");
   WiFi.mode(WIFI_STA);
 
   if (!WiFi.begin(ssid.c_str(), passphrase.c_str())) {
-    Serial.print("WiFi.begin() failed!");
+    Serial.println("WiFi.begin() failed!");
     return 0;
   }
 
@@ -351,6 +356,8 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
   }
 
   ms = millis();
+
+  Serial.print("Connecting to network...");
 
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
@@ -423,7 +430,7 @@ void setup(void) {
   SPIFFS.begin();
 
   Serial.begin(115200);
-  Serial.setDebugOutput(false); // WIFI libraries, etc.
+  //Serial.setDebugOutput(false); // WIFI libraries, etc.
 
   initStatus();
   status->start();
@@ -431,7 +438,12 @@ void setup(void) {
 
   MACString = getMAC();
 
+  logger.tcpReceiveCB = debugCommand;
+  logger.quiet = true;
+
   gc = new GCIT();
+  gc->logger = &logger;
+
   config = new Config();
   config->version = VERSION;
   config->mac = MACString;
@@ -554,12 +566,13 @@ void setup(void) {
 
   bootComplete();
 
+  logger.startTcp();
+
   server = new ESP8266WebServer(httpPort);
   new Router(server, gc);
   server->begin();
   Serial.println("HTTP server started.");
 
-  // just playin...
   Serial.println("\n\n*** Network Scan\n");
   wifiScan();
   //Serial.println(wifiScanJSON());
@@ -576,6 +589,7 @@ void loop(void) {
   resetCheck();
   server->handleClient();
   gc->process();
+  logger.process();
   showtime();
 }
 

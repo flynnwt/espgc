@@ -7,6 +7,7 @@
 #include <GCIT.h>
 #include <flasher.h>
 
+#include "log.h"
 #include "config.h"
 #include "status.h"
 

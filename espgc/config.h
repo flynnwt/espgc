@@ -7,6 +7,8 @@
 #include <utilities.h>
 #include <GCIT.h>
 
+#include "log.h"
+
 #define MAX_CONNECTORS (MAX_MODULES * MODULE_MAX_CONNECTORS)
 
 #define MODULE_PARMS 1

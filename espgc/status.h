@@ -2,6 +2,8 @@
 
 #include <flasher.h>
 
+#include "log.h"
+
 #define NUM_FLASHERS 3
 #define NUM_STATES 5
 

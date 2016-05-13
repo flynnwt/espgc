@@ -3,9 +3,11 @@
 #include <Arduino.h>
 #include <FS.h>
 
+#include "log.h"
+
 class Macros {
   String root;
-  String ext = "txt";
+  String ext = ".txt";
   unsigned long cmdDelay = 100;
 
   File openMacro(String name);

@@ -30,7 +30,7 @@ File Macros::openMacro(String name, String mode) {
   macroFile = root + name;
   File f = SPIFFS.open(macroFile, mode.c_str());
   if (!f) {
-    Serial.printf("Could not open %s.\n", macroFile.c_str());
+    Serial.printf("Could not open %s\n", macroFile.c_str());
   }
   return f;
 }
