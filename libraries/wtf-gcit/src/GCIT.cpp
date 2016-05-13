@@ -18,7 +18,6 @@ void GCIT::init() {
   logger = NULL;
   server = NULL;
   state.enableTcp = false;
-  state.tcpPort = 4998;
   state.enableDiscovery = true;
 
   for (i = 0; i < MAX_TCP_CLIENTS; i++) {
@@ -164,6 +163,10 @@ void GCIT::enableTcp(bool enable) {
   }
 }
 
+void GCIT::enableSerial(ConnectorSerial *c) {
+  serialConnector = c;
+}
+
 void GCIT::setIpAddr(IPAddress ip) {
   for (int i = 0; i < 4; i++) {
     ipAddr[i] = ip[i];
@@ -214,6 +217,9 @@ void GCIT::process() {
   discovery();
   checkSensors();
   handleClient();
+  if (serialConnector) {
+    serialConnector->process();
+  }
 }
 
 /*
@@ -432,6 +438,15 @@ String GCIT::doCommand(String req, WiFiClient *client) {
       } else {
         res = err;
       }
+
+      //} else if (req.substring(0, 7).equals("set_IR,")) {
+      //}
+
+      //} else if (req.substring(0, 11).equals("set_SERIAL,")) {
+      //}
+
+      //} else if (req.substring(0, 11).equals("get_SERIAL,")) {
+      //}
 
     } else {
       // res = "unknowncommand,ERR_01";     // not what real one does

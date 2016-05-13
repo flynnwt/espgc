@@ -112,15 +112,38 @@ public:
   void setState(unsigned int s);
 };
 
+// this really doesn't fit since it uses 2 function pins and potentially 2 status pins...
+// possibly would add Connector::Connector() with array of fPin, SPin
+// but since must use Serial, and it currently must use pins 1/3 or 13/15, just let it be
+//  set up by user; then could use fPin, SPin as rxSPin, txSPin 
 class ConnectorSerial : public ConnectorControl {
+  
+  enum class FlowControl {hardware, none};
+  enum class Parity {none, odd, even};
+  
   unsigned int baudRate;
-  unsigned int flowControl;
-  unsigned int parity;
+  FlowControl flowControl;
+  Parity parity;
+
+  // bogus; this is just duplicating the main version so it should be a separate class
+  //  instantiated in both places
+  bool enableTcp;
+  WiFiClient serverClient[MAX_TCP_CLIENTS];
+  bool serverClientActive[MAX_TCP_CLIENTS];
+  WiFiServer *server; 
 
 public:
-  ConnectorSerial(Connector *c, int fPin, int sPin) {
-    ConnectorControl(c, fPin, sPin);
-  }
+  void (*receiveCB)(String s) = NULL;
+  ConnectorSerial(Connector *c); 
+  ConnectorSerial(Connector *c, int rxSPin, int txSPin);
+  void set(unsigned int baudRate); 
+  void set(unsigned int baudRate, FlowControl flowControl, Parity parity); 
+  unsigned int getBaudRate();
+  FlowControl getFlowControl();
+  Parity getParity();
+  void startTcpServer();
+  void send(String s);
+  void process();
 };
 
 class Connector {
@@ -172,6 +195,7 @@ public:
   bool enableDiscovery;
   bool enableTcp;
   int tcpPort;
+  int serialTcpPort;
 
   Settings() {
     version = "710-1001-05";
@@ -187,6 +211,7 @@ public:
     enableDiscovery = true;
     enableTcp = true;
     tcpPort = 4998;
+    serialTcpPort = 4999;
   }
 };
 
@@ -214,7 +239,8 @@ class GCIT {
 
   Module *modules[MAX_MODULES];
   unsigned int numModules;
-
+  ConnectorSerial *serialConnector = NULL;  // set if a serial conn exists to enable process()
+  
   Settings state;
 
   String doIR(String req, WiFiClient *client);
@@ -257,6 +283,7 @@ public:
   void lock(bool enable);
   void enableDiscovery(bool enable);
   void enableTcp(bool enable);
+  void enableSerial(ConnectorSerial *c);
   
   void process();
 

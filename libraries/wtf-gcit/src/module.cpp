@@ -62,6 +62,7 @@ int Module::addConnector(ConnectorType t, int address, int fPin, int sPin) {
     break;
   case ModuleType::serial:
     descriptor = String(numConnectors) + " SERIAL";
+    parent->enableSerial((ConnectorSerial*)connectors[address - 1]->control);
     break;
   case ModuleType::relay:
     descriptor = String(numConnectors) + " RELAY";
