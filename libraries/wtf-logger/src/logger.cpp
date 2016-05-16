@@ -8,15 +8,31 @@ Log::Log(int uart) : HardwareSerial(uart) {
   init(uart);
 }
 
+// Assignment operator
+// this allows reassigning a logger
+// Log logger;              // uart0
+// logger.begin(115200);
+// ...
+// logger = *(new Log(1));  // switch to uart1
+// logger.begin(115200);
+
+Log& Log::Log::operator= (const Log &source) {
+  init(source.uart);
+  return *this;
+}
+
 void Log::init(int uart) {
   int i;
 
   if (uart == 0) {
     serial = &Serial;
+    this->uart = uart;
   } else if (uart == 1) {
     serial = &Serial1;
+    this->uart = 1;
   } else {
     serial = &Serial; // or null and check in prints
+    this->uart = 0;
   }
   _level = level::debug;
   tcpEnable = false;
@@ -36,6 +52,10 @@ void Log::begin(unsigned long baud, SerialConfig config) {
 
 void Log::begin(unsigned long baud, SerialConfig config, SerialMode mode) {
   serial->begin(baud, config, mode);
+}
+
+void Log::setDebugOutput(bool mode) {
+  serial->setDebugOutput(mode);
 }
 
 Log::level Log::logLevel() {

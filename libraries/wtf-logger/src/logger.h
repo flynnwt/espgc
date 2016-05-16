@@ -58,15 +58,19 @@ protected:
   String fixup(String s);
 
 public:
+  int uart;
   bool quiet = false;
   void (*tcpReceiveCB)(String req) = NULL;
 
   Log();
   Log(int uart);
+  Log& operator= (const Log &source);
 
   void begin(unsigned long baud);
   void begin(unsigned long baud, SerialConfig config);
   void begin(unsigned long baud, SerialConfig config, SerialMode mode);
+  
+  void setDebugOutput(bool mode);
   
   level logLevel();
   void logLevel(level l);
