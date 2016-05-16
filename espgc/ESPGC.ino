@@ -97,7 +97,7 @@ void showtime() {
         latency = (millis() - startTime) / (loops / 1000);
       }
       prevDisplay = now();
-      Serial.printf("\n*** %s free:%i lat:%ius (boot: %s)\n\n", ntpTimestamp().c_str(), esp->getFreeHeap(), latency, startTimestamp.c_str());
+      logger.printf("\n*** %s free:%i lat:%ius (boot: %s)\n\n", ntpTimestamp().c_str(), esp->getFreeHeap(), latency, startTimestamp.c_str());
     }
   }
 }
@@ -132,7 +132,7 @@ void initStatus() {
       mode = text.toInt();
     }
   }
-  Serial.printf("initStatus(): mode=%i, pins=%i %i %i\n", mode, pins[0], pins[1], pins[2]);
+  logger.printf("initStatus(): mode=%i, pins=%i %i %i\n", mode, pins[0], pins[1], pins[2]);
 
   if (mode == 1) {
 
@@ -185,7 +185,7 @@ void initStatus() {
 }
 
 void debugCommand(String cmd) {
-  Serial.printf("Got debug command '%s'\n", fixup(cmd).c_str());
+  logger.printf("Got debug command '%s'\n", fixup(cmd).c_str());
 }
 
 // **************************************************************************************
@@ -205,7 +205,7 @@ String getConfigFile() {
   File f = SPIFFS.open(configFile, "r");
 
   if (!f) {
-    Serial.printf("Could not open %s.\n", configFile.c_str());
+    logger.printf("Could not open %s.\n", configFile.c_str());
   } else {
     res = f.readString();
     f.close();
@@ -257,11 +257,11 @@ void loadConfig(String text, bool deferTcp) {
     }
   }
 
-  Serial.println("\nLoaded configuration:");
-  Serial.print(config->toString());
-  Serial.println();
-  Serial.print(config->toJSON().stringify());
-  Serial.println();
+  logger.println("\nLoaded configuration:");
+  logger.print(config->toString());
+  logger.println();
+  logger.print(config->toJSON().stringify());
+  logger.println();
 
 }
 
@@ -276,11 +276,11 @@ void saveConfig(String text) {
 void saveConfig(String text, String prepend) {
   File f;
 
-  Serial.printf("Saving configuration %s...\n", configFile.c_str());
+  logger.printf("Saving configuration %s...\n", configFile.c_str());
   SPIFFS.remove(configFile);  // shouldn't need this?
   f = SPIFFS.open(configFile, "w");
   if (!f) {
-    Serial.printf("Could not create %s.\n", configFile.c_str());
+    logger.printf("Could not create %s.\n", configFile.c_str());
   } else {
     if (text.equals("")) {
       text = config->toString();
@@ -329,12 +329,12 @@ void saveDefaultConfig() {
 // Wireless Setup
 
 int startAP(String ssid) {
-  Serial.println("Starting as AP...");
+  logger.println("Starting as AP...");
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
   WiFi.softAP(ssid.c_str(), NULL);
-  Serial.printf(" SSID: %s\n", ssid.c_str());
-  Serial.printf(" IP:   %s\n", ipString(apIP).c_str());
+  logger.printf(" SSID: %s\n", ssid.c_str());
+  logger.printf(" IP:   %s\n", ipString(apIP).c_str());
   return 1;
 }
 
@@ -347,7 +347,7 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
   WiFi.mode(WIFI_STA);
 
   if (!WiFi.begin(ssid.c_str(), passphrase.c_str())) {
-    Serial.println("WiFi.begin() failed!");
+    logger.println("WiFi.begin() failed!");
     return 0;
   }
 
@@ -357,10 +357,10 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
 
   ms = millis();
 
-  Serial.print("Connecting to network...");
+  logger.print("Connecting to network...");
 
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
+    logger.print(".");
     if (millis() - ms > waitForWiFi) {
       OK = false;
       break;
@@ -369,13 +369,13 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
     status->process();
     delay(50);
   }
-  Serial.println();
+  logger.println();
 
   if (OK) {
     ipAddr = WiFi.localIP();
 
-    Serial.printf(" SSID: %s\n", ssid.c_str());
-    Serial.printf(" IP:   %s\n", ipString(ipAddr).c_str());
+    logger.printf(" SSID: %s\n", ssid.c_str());
+    logger.printf(" IP:   %s\n", ipString(ipAddr).c_str());
 
     // allow skipping tcp/discovery
     config->enableTcp = enableTcp;
@@ -383,18 +383,18 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
     gc->enableTcp(config->enableTcp);
     if (config->enableTcp) {
       if (config->enableDiscovery) {
-        Serial.println("Discovery beacon active on " + String(gc->settings()->beaconPort) + ".");
+        logger.println("Discovery beacon active on " + String(gc->settings()->beaconPort) + ".");
       }
-      Serial.println("TCP server started on " + String(gc->settings()->tcpPort) + ".");
+      logger.println("TCP server started on " + String(gc->settings()->tcpPort) + ".");
     }
 
     if (waitForNTP > 0) {
-      Serial.print("Getting time...");
+      logger.print("Getting time...");
       ntpBegin(3600);
       OK = true;
       ms = millis();
       while (timeStatus() == timeNotSet) {
-        Serial.print(".");
+        logger.print(".");
         if (millis() - ms > waitForNTP) {
           OK = false;
           break;
@@ -403,9 +403,9 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
         status->process();
         delay(50);
       }
-      Serial.println();
+      logger.println();
       if (OK) {
-        Serial.println(ntpTimestamp());
+        logger.println(ntpTimestamp());
       }
     }
 
@@ -426,11 +426,12 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
 void setup(void) {
   int i, j, rc;
   String MACString, configText;
+  bool serialConnector = false;
 
   SPIFFS.begin();
 
-  Serial.begin(115200);
-  //Serial.setDebugOutput(false); // WIFI libraries, etc.
+  logger.begin(115200);
+  logger.setDebugOutput(false); // WIFI libraries, etc.
 
   initStatus();
   status->start();
@@ -457,29 +458,29 @@ void setup(void) {
   status->set(Status::boot);
 
   // Persistent Configuration 
-  Serial.println("\n\n*** Configuration\n");
+  logger.println("\n\n*** Configuration\n");
   bootCheck();
   status->process();
 
   if (!SPIFFS.exists(configFile)) {
-    Serial.printf("Configuration file %s does not exist.  Creating...\n", configFile.c_str());
+    logger.printf("Configuration file %s does not exist.  Creating...\n", configFile.c_str());
     saveDefaultConfig();
   }
 
-  Serial.printf("\nCurrent configuration:\n");
+  logger.printf("\nCurrent configuration:\n");
   configText = getConfigFile();
   status->process();
-  Serial.print(configText);
+  logger.print(configText);
   loadConfig(configText, true);
   status->process();
 
-  Serial.print("\nChecking lock: ");
+  logger.print("\nChecking lock: ");
   if (lockCheck()) {
-    Serial.println("locked");
+    logger.println("locked");
   } else {
-    Serial.println("unlocked");
+    logger.println("unlocked");
   }
-  Serial.println();
+  logger.println();
 
   // let stuff get to console before crash....
   for (i = 0; i < 20; i++) {
@@ -487,7 +488,7 @@ void setup(void) {
     delay(50);
   }
 
-  Serial.println("\n\n*** Hardware Configuration\n");
+  logger.println("\n\n*** Hardware Configuration\n");
 
   Module* m[MAX_MODULES];
   for (i = 0; i < MAX_MODULES; i++) {
@@ -497,7 +498,7 @@ void setup(void) {
   if (!config->skipped) {
     for (i = 0; i < MAX_MODULES; i++) {
       if (config->modules[i][0] != NONE) {
-        Serial.printf("Adding module %i, type=%i\n", i, config->modules[i][0]);
+        logger.printf("Adding module %i, type=%i\n", i, config->modules[i][0]);
         m[i] = gc->addModule(i, (ModuleType)config->modules[i][0]);
       }
     }
@@ -505,34 +506,37 @@ void setup(void) {
     for (i = 0; i < MAX_CONNECTORS; i++) {
       if (config->connectors[i][0] != NONE) {
         if (m[config->connectors[i][1]]) {
-          Serial.printf("Adding connector %i:%i, type=%i, fPin=%i, sPin=%i\n", config->connectors[i][1], config->connectors[i][2], config->connectors[i][0], config->connectors[i][3], config->connectors[i][4]);
+          logger.printf("Adding connector %i:%i, type=%i, fPin=%i, sPin=%i\n", config->connectors[i][1], config->connectors[i][2], config->connectors[i][0], config->connectors[i][3], config->connectors[i][4]);
           rc = m[config->connectors[i][1]]->addConnector((ConnectorType)config->connectors[i][0], config->connectors[i][2], config->connectors[i][3], config->connectors[i][4]);
           if (!rc) {
-            Serial.printf("FAILED!\n");
-
+            logger.printf("FAILED!\n");
+          }
+          if ((ConnectorType)config->connectors[i][0] == ConnectorType::serial) {
+            logger.printf("Serial connector defined - will swap Serial and use Serial1 for debug after initialization.\n");
+            serialConnector = true;
           }
         } else {
-          Serial.printf("NOT adding connector %i:%i, type=%i, fPin=%i, sPin=%i (bad module)\n", config->connectors[i][1], config->connectors[i][2], config->connectors[i][0], config->connectors[i][3], config->connectors[i][4]);
+          logger.printf("NOT adding connector %i:%i, type=%i, fPin=%i, sPin=%i (bad module)\n", config->connectors[i][1], config->connectors[i][2], config->connectors[i][0], config->connectors[i][3], config->connectors[i][4]);
         }
       }
     }
 
-    Serial.println();
+    logger.println();
 
   } else {
-    Serial.println("Skipped...also disabling discovery and tcp.");
+    logger.println("Skipped...also disabling discovery and tcp.");
     enableDiscovery = false;
     enableTcp = false;
   }
 
   // show tree
-  Serial.println("Device Tree:");
+  logger.println("Device Tree:");
   for (i = 0; i < MAX_MODULES; i++) {
     if (m[i]) {
-      Serial.printf("Module %i, %s\n", i, m[i]->descriptor.c_str());
+      logger.printf("Module %i, %s\n", i, m[i]->descriptor.c_str());
       for (j = 0; j < MODULE_MAX_CONNECTORS; j++) {
         if (m[i]->connectors[j]) {
-          Serial.printf("  Connector %i:%i, %s, fPin=%i, sPin=%i\n", i, m[i]->connectors[j]->address, m[i]->connectors[j]->descriptor.c_str(),
+          logger.printf("  Connector %i:%i, %s, fPin=%i, sPin=%i\n", i, m[i]->connectors[j]->address, m[i]->connectors[j]->descriptor.c_str(),
             m[i]->connectors[j]->control->fcnPin, m[i]->connectors[j]->control->statusPin);
         }
       }
@@ -541,10 +545,10 @@ void setup(void) {
 
   // Initialization
 
-  Serial.println("\n\n*** Initialization\n");
+  logger.println("\n\n*** Initialization\n");
 
-  Serial.printf("MAC: %s\n", MACString.c_str());
-  Serial.printf("Hostname: %s\n", config->hostname.c_str());
+  logger.printf("MAC: %s\n", MACString.c_str());
+  logger.printf("Hostname: %s\n", config->hostname.c_str());
   WiFi.hostname(config->hostname);
 
   if (config->wirelessMode == 0) {
@@ -557,7 +561,7 @@ void setup(void) {
     if (startInfra(config->ssid, config->passphrase, config->dhcp, config->staticIp, config->gatewayIp, config->subnetMask)) {
       status->set(Status::wifi);
     } else {
-      Serial.printf("\nCould not connect to network!\n");
+      logger.printf("\nCould not connect to network!\n");
       startAP(config->ssid);
       status->set(Status::ap);
     }
@@ -566,18 +570,41 @@ void setup(void) {
 
   bootComplete();
 
-  logger.startTcp();
-
   server = new ESP8266WebServer(httpPort);
   new Router(server, gc);
   server->begin();
-  Serial.println("HTTP server started.");
+  logger.println("HTTP server started.");
 
-  Serial.println("\n\n*** Network Scan\n");
+  logger.println("\n\n*** Network Scan\n");
   wifiScan();
-  //Serial.println(wifiScanJSON());
+  //logger.println(wifiScanJSON());
 
-  Serial.println("\n\n*** Setup Complete...Thunderbirds are GO!\n\n");
+  logger.println("\n\n*** Setup Complete...Thunderbirds are GO!\n\n");
+
+  // If serial connector is defined, it uses Serial
+  #define Serial Serial
+  if (serialConnector) {
+    logger.printf("Moving logger to UART1 and restarting UART0 for serial device...\n");
+    delay(1000);
+    // how do i change logger to a new one?  somehow this works if you add an assignment operator to class
+    /*
+    logger.printf("Logger uart=%i", logger.uart);
+    Log newLogger(1);
+    logger.printf("newLogger uart=%i", newLogger.uart);
+    logger = newLogger;
+    logger.printf("Logger uart=%i", logger.uart); 
+    in one step...
+    */
+    logger = *(new Log(1));
+    logger.begin(115200);
+    Serial.flush();   
+    delay(1);           
+    Serial.end();      
+    Serial.begin(115200); // set to default for serial conn
+    Serial.swap();
+    //connector=0,Serial,m,c,b,pf: could set baud,parity/flow/swap?
+  }
+  logger.startTcp();
 
 }
 

@@ -5,7 +5,7 @@ void GCIT::init() {
 
   // this DOESN'T WORK! (defaulting to Serial doesn't work when serial is a Log)
   // seems like the only way for it to work is to have serial be dynamic type at compile
-  //  (HardwareSerial or Log), but don't know how to get that to happen 
+  //  (HardwareSerial or Log), but don't know how to get that to happen
   // had to do it this way because if serial is HardwareSerial, the Log methods don't hide
   //  the base class (HardwareSerial) methods because they aren't virtual (I think); so
   //  this lib needs to know about logger anyway (can't just set serial to a HardwareSerial or Log
@@ -42,9 +42,9 @@ GCIT::GCIT(ModuleType t) {
   //}
 }
 
-// use to select between 'normal' serial output and logger output; 
+// use to select between 'normal' serial output and logger output;
 void GCIT::printf(const char *format, ...) {
-  size_t len = 0;
+  size_t len;
   va_list arg;
   char temp[1460];
 
@@ -274,7 +274,7 @@ void GCIT::discovery() {
 //  busyIR (conflict on incoming vs current)
 
 String GCIT::doCommand(String req, WiFiClient *client) {
-  int i;
+  int i, len, hexval;
   String res;
   char mod, colon, conn, comma, value;
   String rest, err;
@@ -291,7 +291,9 @@ String GCIT::doCommand(String req, WiFiClient *client) {
   } else {
 
     // 1. remove trailing
-    req.trim();
+    // just remove \r so sendserial doesn't lose chars
+    //req.trim();
+    req = req.substring(0, req.length() - 1);
 
     // 2. parse
     if (req.equals("getdevices")) {
@@ -374,8 +376,8 @@ String GCIT::doCommand(String req, WiFiClient *client) {
       // this is actually complicated for some reason; a second connection can come in and do a stopir and
       //  BOTH should be notified (the originating connection then doesn't get a completeir);  apparently trying
       //  to avoid conflicts if a new client wants to start using it? could've just rejected the new request
-    } else if (req.substring(0, 7).equals("stopir,")) {
-      res = req.substring(0, 10);
+      //} else if (req.substring(0, 7).equals("stopir,")) {
+      //  res = req.substring(0, 10);
 
     } else if (req.substring(0, 9).equals("getstate,")) {
       mod = req.charAt(9);
@@ -448,7 +450,89 @@ String GCIT::doCommand(String req, WiFiClient *client) {
       //} else if (req.substring(0, 11).equals("get_SERIAL,")) {
       //}
 
-    } else {
+    /* Not defined by GC; enable sending serial through a command */
+    // if req is already uri decoded, %00 won't work (string terminates early);
+    //  use sendserialx instead
+    } else if (req.substring(0, 11).equals("sendserial,")) {
+      mod = req.charAt(11);
+      colon = req.charAt(12);
+      conn = req.charAt(13);
+      comma = req.charAt(14);
+      rest = req.substring(15);
+      err = validateModCon(mod, colon, conn, comma, ',');
+      if (err.equals("")) {
+        module = getModule((unsigned int)(mod - '0'));
+        if (!module) {
+          res = ERR_02;
+        } else {
+          connector = module->getConnector((unsigned int)(conn - '0'));
+          if (!connector) {
+            res = ERR_03;
+          } else {
+            if (connector->type != ConnectorType::serial) {
+              res = ERR_13; // i guess
+            } else {
+              res = "Sent " + String(rest.length()) + " bytes";
+              ((ConnectorSerial *)(connector->control))->send(rest);
+              printf("sendserial: %s\n", urlencode(rest).c_str());
+            }
+          }
+        }
+      } else {
+        res = err;
+      }
+
+    /* Not defined by GC; enable sending serial through a command */
+    // data is string of hex (eg. c001babe)
+    } else if (req.substring(0, 12).equals("sendserialx,")) {
+      mod = req.charAt(12);
+      colon = req.charAt(13);
+      conn = req.charAt(14);
+      comma = req.charAt(15);
+      rest = req.substring(16);
+      err = validateModCon(mod, colon, conn, comma, ',');
+      if (err.equals("")) {
+        module = getModule((unsigned int)(mod - '0'));
+        if (!module) {
+          res = ERR_02;
+        } else {
+          connector = module->getConnector((unsigned int)(conn - '0'));
+          if (!connector) {
+            res = ERR_03;
+          } else {
+            if (connector->type != ConnectorType::serial) {
+              res = ERR_13; // i guess
+            } else {
+              char buffer[rest.length() / 2];
+              i = len = 0;
+              while (i < rest.length()) {
+                value = toupper(rest.charAt(i++));
+                if (isxdigit(value)) {
+                  hexval = (value >= 'A') ? (value - 'A' + 10) : (value - '0');
+                  hexval = hexval << 4;
+                } else {
+                  break;
+                }
+                value = toupper(rest.charAt(i++));
+                if (isxdigit(value)) {
+                  hexval += (value >= 'A') ? (value - 'A' + 10) : (value - '0');
+                  buffer[len++] = hexval;
+                } else {
+                  break;
+                }
+              }
+              res = "Sent " + String(len) + " bytes";
+              ((ConnectorSerial *)(connector->control))->send(buffer, len);
+              printf("sendserialx: %s\n", rest.c_str());
+            }
+          }
+        }
+      } else {
+        res = err;
+      }
+    }
+
+    else {
       // res = "unknowncommand,ERR_01";     // not what real one does
       res = "ERR_0:0,001";
     }

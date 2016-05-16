@@ -50,6 +50,15 @@ void ConnectorSerial::send(String s) {
   Serial.print(s);
 }
 
+void ConnectorSerial::send(char buffer[], unsigned int len) {
+  unsigned int i;
+  
+  for (i = 0; i < len; i++) {
+    Serial.write(buffer[i]);
+  }
+  Serial.flush();
+}
+
 void ConnectorSerial::process() {
   int i;
   bool ok = false;

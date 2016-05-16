@@ -143,6 +143,7 @@ public:
   Parity getParity();
   void startTcpServer();
   void send(String s);
+  void send(char buffer[], unsigned int len);
   void process();
 };
 
