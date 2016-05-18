@@ -274,7 +274,7 @@ function saveConfig() {
   body += '&tagline=' + $('[name=tagline]').val();
   body += '&platform=' + $('[name=platform]').val();
   body += '&hostname=' + $('[name=hostname]').val();
-  body += '&networkMode=' + $('[name=wirelessMode]').val();                  // 0/1
+  body += '&wirelessMode=' + $('[name=wirelessMode]').val();                  // 0/1
   body += '&ssid=' + $('[name=ssid]').val();
   body += '&passphrase=' + $('[name=passphrase]').val();
   body += '&dhcp=' + ($('[name=dhcp]').prop('checked') ? 1 : 0);          // 0/1
@@ -466,8 +466,8 @@ $(function() {
     loadNetworks();
   }, networkPollTime);
 
-  $('[name=networkMode]').on('change', function(ev) {
-    $('[name=networkMode]').forEach(function(el) {
+  $('[name=wirelessMode]').on('change', function(ev) {
+    $('[name=wirelessMode]').forEach(function(el) {
       if (el.value === '0') {
         $('[name=dhcp]').forEach(function(el) {
           el.disabled = false;
