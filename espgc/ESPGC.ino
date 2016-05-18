@@ -328,22 +328,26 @@ void saveDefaultConfig() {
 // **************************************************************************************
 // Wireless Setup
 
+// MUST access with 192.168.0.1/index.html (NOT 192.168.0.1!!)
 int startAP(String ssid) {
   logger.println("Starting as AP...");
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-  WiFi.softAP(ssid.c_str(), NULL);
-  logger.printf(" SSID: %s\n", ssid.c_str());
-  logger.printf(" IP:   %s\n", ipString(apIP).c_str());
-  return 1;
+  if (WiFi.softAP(ssid.c_str())) {
+    logger.printf(" SSID: %s\n", ssid.c_str());
+    logger.printf(" IP:   %s\n", ipString(apIP).c_str());
+    return 1;
+  } else {
+    logger.printf("*** FAILED ***");
+    return 0;
+  }
 }
 
 int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPAddress gatewayIp, IPAddress subnetMask) {
   IPAddress ipAddr;
   time_t ms;
   bool OK = true;
-
-
+  
   WiFi.mode(WIFI_STA);
 
   if (!WiFi.begin(ssid.c_str(), passphrase.c_str())) {
@@ -562,7 +566,7 @@ void setup(void) {
       status->set(Status::wifi);
     } else {
       logger.printf("\nCould not connect to network!\n");
-      startAP(config->ssid);
+      startAP("ESP_" + MACString); // don't use ssid; may conflict
       status->set(Status::ap);
     }
 
