@@ -16,7 +16,7 @@ Log::Log(int uart) : HardwareSerial(uart) {
 // logger = *(new Log(1));  // switch to uart1
 // logger.begin(115200);
 
-Log& Log::Log::operator= (const Log &source) {
+Log &Log::Log::operator=(const Log &source) {
   init(source.uart);
   return *this;
 }
@@ -71,9 +71,22 @@ String Log::logLevelName() {
 }
 
 String Log::fixup(String s) {
-  s.replace("\r", "<CR>");
-  s.replace("\n", "<LF>");
-  return s;
+  int i;
+  char value, hexbuf[2];
+  String res = "";
+
+  for (i = 0; i < s.length(); i++) {
+    value = s[i];
+    if ((value < 32) || (value > 126)) {
+      sprintf(hexbuf, "%02X", value);
+      res += "\\" + String(hexbuf);
+    } else if (value == '\\') {
+      res += "\\\\";
+    } else {
+      res += String(value);
+    }
+  }
+  return res;
 }
 
 // *** Print Stuff ***
@@ -267,7 +280,7 @@ void Log::tcpProcess() {
     for (i = 0; i < MAX_TCP_CLIENTS; i++) {
       if (serverClientActive[i] && serverClient[i].connected()) {
         if (serverClient[i].available()) {
-          req = serverClient[i].readString();
+          req = serverClient[i].readString(); // can't handle null
           tcpReceive(req, i);
         }
       } else if (serverClientActive[i] && !serverClient[i].connected()) {
