@@ -476,7 +476,7 @@ String GCIT::doCommand(String req, WiFiClient *client) {
             if (connector->type != ConnectorType::serial) {
               res = ERR_13; // i guess
             } else {
-              res = "Sent " + String(rest.length()) + " bytes";
+              res = "sendserial," + String(mod) + ':' + String(conn) + "," + String(rest.length()) + " bytes";
               ((ConnectorSerial *)(connector->control))->send(rest);
               printf("sendserial: %s\n", urlencode(rest).c_str());
             }
@@ -525,7 +525,7 @@ String GCIT::doCommand(String req, WiFiClient *client) {
                   break;
                 }
               }
-              res = "Sent " + String(len) + " bytes";
+              res = "sendserialx," + String(mod) + ':' + String(conn) + "," + String(len) + " bytes";
               ((ConnectorSerial *)(connector->control))->send(buffer, len);
               printf("sendserialx: %s\n", rest.c_str());
             }
@@ -558,7 +558,7 @@ String GCIT::doCommand(String req, WiFiClient *client) {
               res = ERR_13; // i guess
             } else {
               serial = (ConnectorSerial *)connector->control;
-              res = "recvserial," + String(serial->recvBufferLen) + "," + String(serial->recvBufferOFlow) + ",";
+              res = "recvserial," + String(mod) + ':' + String(conn) + "," + String(serial->recvBufferLen) + "," + String(serial->recvBufferOFlow) + ",";
               for (i = 0; i < serial->recvBufferLen; i++) {
                 sprintf(hexbuf, "%02X", serial->recvBuffer[i]);
                 res += String(hexbuf);

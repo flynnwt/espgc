@@ -59,7 +59,7 @@ As a first attempt at programming the ESP8266, I used the Global Cache ITach as 
 ## API
 
 * Hardware info/control/sense
-  * GET /api/cmd=[gc cmd]
+  * GET /api/cmd=[cmd]
 
 * Macros
   * GET /api/macro
@@ -100,6 +100,21 @@ curl 192.168.0.100/api?cmd=getstate,1:2
 curl 192.168.0.100/api/compressir?code=128,63,16,16,16,48,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,48,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,48,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,48,16,48,16,48,16,48,16,48,16,16,16,16,16,16,16,48,16,48,16,48,16,48,16,48,16,16,16,48,16,2712
 {
 "code":"128,63,16,16,16,48BBBBBBBBBBBCBBBBBBBBBCBBBBBBBBBCCCCCBBBCCCCCBC16,2712"
+}
+
+curl "192.168.0.108/api?cmd=sendserial,1:1,go+spartans%0D"
+{
+"res":"sendserial,1:1,12 bytes"
+}
+
+>curl "192.168.0.108/api?cmd=sendserialx,1:1,580959005A"
+{
+"res":"sendserialx,1:1,5 bytes"
+}
+
+curl "192.168.0.108/api?cmd=recvserial,1:1"
+{
+"res":"recvserial,1:1,18,0,66726F6D2074686520636F6D20706F727421,from the com port!"
 }
 
 curl -X POST 192.168.0.100/api/admin/lock
