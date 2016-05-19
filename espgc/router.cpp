@@ -10,6 +10,11 @@ http://192.168.0.100/api?cmd=sendir
 http://192.168.0.100/api?cmd=getstate
 http://192.168.0.100/api?cmd=setstate
 
+connector commands, GET/POST (not defined by GC)...
+http://192.168.0.100/api?cmd=sendserial
+http://192.168.0.100/api?cmd=sendserialx
+http://192.168.0.100/api?cmd=recvserial
+
 macros...
 GET  http://192.168.0.100/api/macro
 POST  http://192.168.0.100/api/macro

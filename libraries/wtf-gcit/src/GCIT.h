@@ -45,6 +45,7 @@ class Connector;
 // specific connector state and control
 class ConnectorControl {
 public:
+  GCIT *gc;
   Connector *parent;
   int fcnPin = UNDEFINED_FPIN;
   int statusPin = UNDEFINED_SPIN;
@@ -130,20 +131,28 @@ class ConnectorSerial : public ConnectorControl {
   bool enableTcp;
   WiFiClient serverClient[MAX_TCP_CLIENTS];
   bool serverClientActive[MAX_TCP_CLIENTS];
-  WiFiServer *server; 
+  WiFiServer *server;
+   
+  String fixup(char *buffer, unsigned int len);
 
 public:
-  void (*receiveCB)(String s) = NULL;
+  unsigned int recvBufferSize;
+  char *recvBuffer;
+  unsigned int recvBufferLen;
+  bool recvBufferOFlow;
+
   ConnectorSerial(Connector *c); 
   ConnectorSerial(Connector *c, int rxSPin, int txSPin);
   void set(unsigned int baudRate); 
   void set(unsigned int baudRate, FlowControl flowControl, Parity parity); 
+  void setBufferSize(unsigned int size);
   unsigned int getBaudRate();
   FlowControl getFlowControl();
   Parity getParity();
   void startTcpServer();
   void send(String s);
   void send(char buffer[], unsigned int len);
+  //void (*receiveCB)(char buffer[], unsigned int len) = NULL;
   void process();
 };
 
@@ -254,9 +263,9 @@ class GCIT {
   void discovery();
   void checkSensors();
   void handleClient();
-  void printf(const char* format, ...);
 
 public:
+  void printf(const char* format, ...);
   HardwareSerial *serial;
   Log *logger;
 

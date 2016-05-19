@@ -20,9 +20,6 @@ void GCIT::init() {
   state.enableTcp = false;
   state.enableDiscovery = true;
 
-  for (i = 0; i < MAX_TCP_CLIENTS; i++) {
-    serverClientActive[i] = false;
-  }
   for (i = 0; i < MAX_MODULES; i++) {
     modules[i] = NULL;
   }
@@ -197,7 +194,12 @@ Connector *GCIT::getConnector(unsigned int m, unsigned int c) {
 void GCIT::startTcpServer() { startTcpServer(state.tcpPort); }
 
 void GCIT::startTcpServer(int port) {
+  int i;
+
   state.tcpPort = port;
+  for (i = 0; i < MAX_TCP_CLIENTS; i++) {
+    serverClientActive[i] = false;
+  }
   state.enableTcp = true;
   server = new WiFiServer(state.tcpPort);
   server->setNoDelay(true);
@@ -281,6 +283,8 @@ String GCIT::doCommand(String req, WiFiClient *client) {
   bool noResponse = (client == NULL);
   Module *module;
   Connector *connector;
+  ConnectorSerial *serial;
+  char hexbuf[2];
 
   // 0. check if \r or \r\n at end - real one gives err16 if not
   if (req.charAt(req.length() - 1) == '\n') {
@@ -450,9 +454,9 @@ String GCIT::doCommand(String req, WiFiClient *client) {
       //} else if (req.substring(0, 11).equals("get_SERIAL,")) {
       //}
 
-    /* Not defined by GC; enable sending serial through a command */
-    // if req is already uri decoded, %00 won't work (string terminates early);
-    //  use sendserialx instead
+      /* Not defined by GC; enable sending serial through a command */
+      // if req is already uri decoded, %00 won't work (string terminates early);
+      //  use sendserialx instead
     } else if (req.substring(0, 11).equals("sendserial,")) {
       mod = req.charAt(11);
       colon = req.charAt(12);
@@ -482,8 +486,8 @@ String GCIT::doCommand(String req, WiFiClient *client) {
         res = err;
       }
 
-    /* Not defined by GC; enable sending serial through a command */
-    // data is string of hex (eg. c001babe)
+      /* Not defined by GC; enable sending serial through a command */
+      // data is string of hex (eg. c001babe)
     } else if (req.substring(0, 12).equals("sendserialx,")) {
       mod = req.charAt(12);
       colon = req.charAt(13);
@@ -530,6 +534,58 @@ String GCIT::doCommand(String req, WiFiClient *client) {
       } else {
         res = err;
       }
+
+      /* Not defined by GC; enable receiving serial through a command */
+      // return a string of recvserial,len,oflow,hexstring,string
+    } else if (req.substring(0, 11).equals("recvserial,")) {
+      mod = req.charAt(11);
+      colon = req.charAt(12);
+      conn = req.charAt(13);
+      //comma = req.charAt(14);
+      //rest = req.substring(15);
+      //err = validateModCon(mod, colon, conn, comma, ',');
+      err = validateModCon(mod, colon, conn);
+      if (err.equals("")) {
+        module = getModule((unsigned int)(mod - '0'));
+        if (!module) {
+          res = ERR_02;
+        } else {
+          connector = module->getConnector((unsigned int)(conn - '0'));
+          if (!connector) {
+            res = ERR_03;
+          } else {
+            if (connector->type != ConnectorType::serial) {
+              res = ERR_13; // i guess
+            } else {
+              serial = (ConnectorSerial *)connector->control;
+              res = "recvserial," + String(serial->recvBufferLen) + "," + String(serial->recvBufferOFlow) + ",";
+              for (i = 0; i < serial->recvBufferLen; i++) {
+                sprintf(hexbuf, "%02X", serial->recvBuffer[i]);
+                res += String(hexbuf);
+              }
+              res += ",";
+              for (i = 0; i < serial->recvBufferLen; i++) {
+                value = serial->recvBuffer[i];
+                if ((value < 32) || (value > 126)) {
+                  sprintf(hexbuf, "%02X", value);
+                  res += "\\" + String(hexbuf);
+                } else if (value == '\\') {
+                  res += "\\\\";
+                } else {
+                  res += String(value);
+                }
+              }
+              printf("%s\n", res.c_str());
+              serial->recvBufferLen = 0;
+              serial->recvBuffer[0] = '\0';
+              serial->recvBufferOFlow = false;
+            }
+          }
+        }
+      } else {
+        res = err;
+      }
+
     }
 
     else {

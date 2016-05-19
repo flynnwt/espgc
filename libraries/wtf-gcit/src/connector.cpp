@@ -1,6 +1,8 @@
 #include "connector.h"
 
-Connector::Connector(Module *m, unsigned int a, ConnectorType t) { Connector(m, a, t, -1, -1); }
+Connector::Connector(Module *m, unsigned int a, ConnectorType t) {
+  Connector(m, a, t, -1, -1);
+}
 
 Connector::Connector(Module *m, unsigned int a, ConnectorType t, int fPin) {
   Connector(m, a, t, fPin, -1);
@@ -45,11 +47,16 @@ Connector::Connector(Module *m, unsigned int a, ConnectorType t, int fPin, int s
   }
 }
 
-ConnectorControl::ConnectorControl(Connector *c) { ConnectorControl(c, -1, -1); }
+ConnectorControl::ConnectorControl(Connector *c) {
+  ConnectorControl(c, -1, -1);
+}
 
-ConnectorControl::ConnectorControl(Connector *c, int fPin) { ConnectorControl(c, fPin, -1); }
+ConnectorControl::ConnectorControl(Connector *c, int fPin) {
+  ConnectorControl(c, fPin, -1);
+}
 
 ConnectorControl::ConnectorControl(Connector *c, int fPin, int sPin) {
+  gc = c->parent->parent;
   parent = c;
   fcnPin = fPin;
   statusPin = sPin;

@@ -2,6 +2,8 @@
 // #define DEBUGV(...) ets_printf(__VA_ARGS__) in library debug.h
 // Serial.setDebugOutput(true) 
 
+// looks like lib only allows 5 wifi server connections simultaneously
+
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -184,8 +186,34 @@ void initStatus() {
 
 }
 
+/*
+\FF\FB\1F\FF\FB \FF\FB\18\FF\FB'\FF\FD\01\FF\FB\03\FF\FD\03
+IAC WILL 1F window size
+IAC WILL 20 terminal speed
+IAC WILL 18 terminal type
+IAC WILL 27 new environment
+IAC DO   01 echo
+IAC WILL 03 suppress go ahead
+IAC DO   03 suppress go ahead
+*/
 void debugCommand(String cmd) {
-  logger.printf("Got debug command '%s'\n", fixup(cmd).c_str());
+  int i;
+  char value, hexbuf[2];
+  String res = "";
+
+  for (i = 0; i < cmd.length(); i++) {
+    value = cmd[i];
+    if ((value < 32) || (value > 126)) {
+      sprintf(hexbuf, "%02X", value);
+      res += "\\" + String(hexbuf);
+    } else if (value == '\\') {
+      res += "\\\\";
+    } else {
+      res += String(value);
+    }
+  }
+
+  logger.printf("Got debug command '%s'\n", res.c_str());
 }
 
 // **************************************************************************************
@@ -514,10 +542,12 @@ void setup(void) {
           rc = m[config->connectors[i][1]]->addConnector((ConnectorType)config->connectors[i][0], config->connectors[i][2], config->connectors[i][3], config->connectors[i][4]);
           if (!rc) {
             logger.printf("FAILED!\n");
-          }
-          if ((ConnectorType)config->connectors[i][0] == ConnectorType::serial) {
-            logger.printf("Serial connector defined - will swap Serial and use Serial1 for debug after initialization.\n");
-            serialConnector = true;
+          } else {
+            if ((ConnectorType)config->connectors[i][0] == ConnectorType::serial) {
+              logger.printf("Serial connector defined - will swap Serial and use Serial1 for debug after initialization.\n");
+              serialConnector = true;
+              //((ConnectorSerial *)m[config->connectors[i][1]]->getConnector(config->connectors[i][2])->control)->setBufferSize(20);
+            }
           }
         } else {
           logger.printf("NOT adding connector %i:%i, type=%i, fPin=%i, sPin=%i (bad module)\n", config->connectors[i][1], config->connectors[i][2], config->connectors[i][0], config->connectors[i][3], config->connectors[i][4]);
@@ -581,32 +611,25 @@ void setup(void) {
 
   logger.println("\n\n*** Network Scan\n");
   wifiScan();
-  //logger.println(wifiScanJSON());
 
   logger.println("\n\n*** Setup Complete...Thunderbirds are GO!\n\n");
 
   // If serial connector is defined, it uses Serial
-  #define Serial Serial
+#define Serial Serial
   if (serialConnector) {
     logger.printf("Moving logger to UART1 and restarting UART0 for serial device...\n");
     delay(1000);
-    // how do i change logger to a new one?  somehow this works if you add an assignment operator to class
-    /*
-    logger.printf("Logger uart=%i", logger.uart);
-    Log newLogger(1);
-    logger.printf("newLogger uart=%i", newLogger.uart);
-    logger = newLogger;
-    logger.printf("Logger uart=%i", logger.uart); 
-    in one step...
-    */
     logger = *(new Log(1));
     logger.begin(115200);
-    Serial.flush();   
-    delay(1);           
-    Serial.end();      
-    Serial.begin(115200); // set to default for serial conn
+    Serial.flush();
+    delay(1);
+    Serial.end();
+    //connector=0,Serial,m,c,b,pfsb: could set baud,parity/flow/swap/bufsize? or use serial.txt
+    Serial.begin(115200);             // set to defaults for serial device conn
     Serial.swap();
-    //connector=0,Serial,m,c,b,pf: could set baud,parity/flow/swap?
+    while (Serial.available() > 0) {  // toss any junk
+      Serial.read();
+    }
   }
   logger.startTcp();
 
