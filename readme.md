@@ -32,7 +32,7 @@ As a first attempt at programming the ESP8266, I used the Global Cache ITach as 
 
 * is recognized as ITach by Homeseer plugin (broadcast, tcp, sendir, sensor_notify)
 
-* have tried a small set of IR devices/commands
+* have tried a small set of IR devices/commands; also have now tested with serial board (http://www.amazon.com/uxcell%C2%AE-MAX232CSE-Transfer-Converter-Module/dp/B00EJ9NAKA) and relay board (http://www.amazon.com/JBtek%C2%AE-Channel-Shield-Arduino-Raspberry/dp/B00QGUFVWU)
 
 ## Hardware Programming and Operation
 
@@ -43,7 +43,8 @@ As a first attempt at programming the ESP8266, I used the Global Cache ITach as 
   * /espgc files in a main project (../espgc) directory
   * /espgc/data is the SPIFFS data directory
 
-0. serial console output for debug/monitoring
+0. serial console output for debug/monitoring; also
+port 23 tcp debug console
 
 0. boots to AP mode w/SSID based on MAC, accessible at 192.168.0.1
 
@@ -87,6 +88,7 @@ As a first attempt at programming the ESP8266, I used the Global Cache ITach as 
   #### Examples
 
 ```
+# IR, Relay, Serial
 curl 192.168.0.100/api?cmd=sendir,1:1,1,37000,10,1,128,64,16,16,16,49BBBBBBBBBBBCBBBBBBBBBCBBBBBBBBCBCCCCBBCBCCCCBC16,2718
 {
 "res":"completeir,1:1,1"
@@ -117,6 +119,7 @@ curl "192.168.0.108/api?cmd=recvserial,1:1"
 "res":"recvserial,1:1,18,0,66726F6D2074686520636F6D20706F727421,from the com port!"
 }
 
+# Lock, etc.
 curl -X POST 192.168.0.100/api/admin/lock
 {
 "err":"Expected 'pw' parameter"
@@ -141,7 +144,7 @@ curl -X POST 192.168.0.100/api/config
 {
 "err":"Device is locked"
 }
-C:\Projects\node>curl 192.168.0.100/api/config
+curl 192.168.0.100/api/config
 {
 "res":{
 "version":"867.5309.01",
@@ -168,7 +171,6 @@ C:\Projects\node>curl 192.168.0.100/api/config
 "connector_2":"IRBlaster,1,3,5,-1",
 "lastBoot":"OK"
 }
-}
 curl -X POST 192.168.0.100/api/admin/restart
 {
 "err":"Device is locked"
@@ -178,7 +180,7 @@ curl -X POST 192.168.0.100/api/admin/unlock?pw=sparty
 "res":"Unlocked device"
 }
 
-# list
+# Macros
 curl "192.168.0.101/api/macro?list=LR_Off"
 {
 "name":"LR_Off",
@@ -202,6 +204,13 @@ curl "192.168.0.101/api/macro?name=LR_Off"
 "commands":"sendir,1:1,1,38000,1,69,341,170,21,21,21,64CCCCCBCBBBBBBCCCCCCCCBBBBBBBBC21,1517,341,85,21,3655\nsendir,1:1,1,37000,10,1,128,63,16,16,16,48BBBBBBBBBBBCBBBBBBBBBCBBBBBBBBCCCCCCBBCCCCCCBC16,2712\n",
 "delay":100,
 "res":"completeir,1:1,1\ncompleteir,1:1,1"
+}
+
+# Add led.txt to specify status led hardware
+curl -X POST "192.168.0.100/api/admin/file?file=led.txt&data=3,15,12,13"
+{
+"name":"/led.txt",
+"data":"3,15,12,13"
 }
 
 ```
