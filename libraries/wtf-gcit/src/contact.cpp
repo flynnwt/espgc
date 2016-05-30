@@ -85,19 +85,21 @@ void ConnectorSensorNotify::update() {
 }
 
 // Relay Connector
+// state is logical state; negative fcnPin inverts physical reads/writes
 
 ConnectorRelay::ConnectorRelay(Connector *c, int fPin, int sPin) {
   parent = c;
   fcnPin = fPin;
   statusPin = sPin;
-  if (fcnPin > 0) {
-    state = 0;
-  } else {
-    state = 1;
-  }
+  state = 0;
   if (fcnPin != UNDEFINED_FPIN) {
-    pinMode(fcnPin, OUTPUT);
-    digitalWrite(fcnPin, state);
+    if (fcnPin > 0) {
+      pinMode(fcnPin, OUTPUT);
+      digitalWrite(fcnPin, state);
+    } else {
+      pinMode(-fcnPin, OUTPUT);
+      digitalWrite(-fcnPin, 1 - state);
+    }
   }
   if (statusPin != UNDEFINED_SPIN) {
     pinMode(statusPin, OUTPUT);
@@ -106,20 +108,16 @@ ConnectorRelay::ConnectorRelay(Connector *c, int fPin, int sPin) {
 
 void ConnectorRelay::setState(unsigned int s) {
   if (s != 0) {
-    if (fcnPin > 0) {
-      state = 1;
-    } else {
-      state = 0;
-    }
+    state = 1;
   } else {
-    if (fcnPin > 0) {
-      state = 0;
-    } else {
-      state = 1;
-    }
+    state = 0;
   }
   if (fcnPin != UNDEFINED_FPIN) {
-    digitalWrite(fcnPin, state);
+    if (fcnPin > 0) {
+      digitalWrite(fcnPin, state);
+    } else {
+      digitalWrite(-fcnPin, 1 - state);
+    }
   }
 }
 
