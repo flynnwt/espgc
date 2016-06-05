@@ -458,7 +458,7 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
 void setup(void) {
   int i, j, rc;
   String MACString, configText;
-  bool serialConnector = false;
+  ConnectorSerial *serialConnector = NULL;
 
   SPIFFS.begin();
 
@@ -545,8 +545,7 @@ void setup(void) {
           } else {
             if ((ConnectorType)config->connectors[i][0] == ConnectorType::serial) {
               logger.printf("Serial connector defined - will swap Serial and use Serial1 for debug after initialization.\n");
-              serialConnector = true;
-              //((ConnectorSerial *)m[config->connectors[i][1]]->getConnector(config->connectors[i][2])->control)->setBufferSize(20);
+              serialConnector = (ConnectorSerial *)m[config->connectors[i][1]]->getConnector(config->connectors[i][2])->control;
             }
           }
         } else {
@@ -614,25 +613,18 @@ void setup(void) {
 
   logger.println("\n\n*** Setup Complete...Thunderbirds are GO!\n\n");
 
-  // If serial connector is defined, it uses Serial
+  // If serial connector is defined, it uses Serial on alternate pins (13,15)
 #define Serial Serial
   if (serialConnector) {
     logger.printf("Moving logger to UART1 and restarting UART0 for serial device...\n");
     delay(1000);
     logger = *(new Log(1));
     logger.begin(115200);
-    Serial.flush();
-    delay(1);
-    Serial.end();
     //connector=0,Serial,m,c,b,pfsb: could set baud,parity/flow/swap/bufsize? or use serial.txt
-    Serial.begin(115200);             // set to defaults for serial device conn
-    Serial.swap();
-    while (Serial.available() > 0) {  // toss any junk
-      Serial.read();
-    }
+    serialConnector->set(115200, ConnectorSerial::FlowControl::none, ConnectorSerial::Parity::none);
+    serialConnector->reset();
   }
   logger.startTcp();
-
 }
 
 // **************************************************************************************

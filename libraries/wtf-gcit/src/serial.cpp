@@ -16,14 +16,50 @@ ConnectorSerial::ConnectorSerial(Connector *c, int rxSpin, int txSPin) {
   startTcpServer();
 }
 
-void ConnectorSerial::set(unsigned int baudRate) {
-  this->baudRate = baudRate;
+unsigned int ConnectorSerial::set(unsigned int baudRate) {
+  unsigned int legal[9] = {1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200};
+  int i;
+
+  for (i = 0; i < 9; i++) {
+    if (legal[i] == baudRate) {
+      break;
+    }
+  }
+
+  if (i != 9) {
+    this->baudRate = baudRate;
+    return baudRate;
+  } else {
+    return 0;
+  }
 }
 
-void ConnectorSerial::set(unsigned int baudRate, FlowControl flowControl, Parity parity) {
-  this->baudRate = baudRate;
-  this->flowControl = flowControl;
-  this->parity = parity;
+unsigned int ConnectorSerial::set(unsigned int baudRate, FlowControl flowControl, Parity parity) {
+  unsigned int rate;
+
+  rate = set(baudRate);
+  if (rate != 0) {
+    this->baudRate = baudRate;
+    this->flowControl = flowControl;
+    this->parity = parity;
+    return baudRate;
+  } else {
+    return 0;
+  }
+}
+
+void ConnectorSerial::reset() {
+  Serial.flush();
+  delay(1);
+  Serial.end();
+  // ignore flow control; data bits always 8, stop bits always 1; GC does allow 7 and 2 if config'd from Serial web page;
+  //  make that a separate api function if ever needed
+  Serial.begin(baudRate,
+               parity == Parity::none ? SERIAL_8N1 : parity == Parity::odd ? SERIAL_8O1 : SERIAL_8E1);
+  Serial.swap();
+  while (Serial.available() > 0) { // toss any junk
+    Serial.read();
+  }
 }
 
 void ConnectorSerial::setBufferSize(unsigned int size) {
@@ -40,16 +76,22 @@ void ConnectorSerial::setBufferSize(unsigned int size) {
   recvBufferOFlow = false;
 }
 
-unsigned int ConnectorSerial::getBaudRate() {
-  return baudRate;
-}
-
-ConnectorSerial::FlowControl ConnectorSerial::getFlowControl() {
-  return flowControl;
-}
-
-ConnectorSerial::Parity ConnectorSerial::getParity() {
-  return parity;
+String ConnectorSerial::getParams() {
+  String res = "";
+  res = String(baudRate) + ",";
+  if (flowControl == FlowControl::none) {
+    res += "FLOW_NONE,";
+  } else {
+    res += "FLOW_HARDWARE";
+  }
+  if (parity == Parity::none) {
+    res += "PARITY_NO";
+  } else if (parity == Parity::odd) {
+    res += "PARITY_ODD";
+  } else {
+    res += "PARITY_EVEN";
+  }
+  return res;
 }
 
 // gc does all serial through tcp connection(s)

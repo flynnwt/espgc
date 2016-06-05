@@ -118,14 +118,12 @@ public:
 // but since must use Serial, and it currently must use pins 1/3 or 13/15, just let it be
 //  set up by user; then could use fPin, SPin as rxSPin, txSPin 
 class ConnectorSerial : public ConnectorControl {
-  
+
+public: 
   enum class FlowControl {hardware, none};
   enum class Parity {none, odd, even};
-  
-  unsigned int baudRate;
-  FlowControl flowControl;
-  Parity parity;
 
+private:  
   // bogus; this is just duplicating the main version so it should be a separate class
   //  instantiated in both places
   bool enableTcp;
@@ -136,6 +134,9 @@ class ConnectorSerial : public ConnectorControl {
   String fixup(char *buffer, unsigned int len);
 
 public:
+  unsigned int baudRate;
+  FlowControl flowControl;
+  Parity parity;
   unsigned int recvBufferSize;
   char *recvBuffer;
   unsigned int recvBufferLen;
@@ -143,12 +144,11 @@ public:
 
   ConnectorSerial(Connector *c); 
   ConnectorSerial(Connector *c, int rxSPin, int txSPin);
-  void set(unsigned int baudRate); 
-  void set(unsigned int baudRate, FlowControl flowControl, Parity parity); 
+  unsigned int set(unsigned int baudRate); 
+  unsigned int set(unsigned int baudRate, FlowControl flowControl, Parity parity); 
+  void reset();
   void setBufferSize(unsigned int size);
-  unsigned int getBaudRate();
-  FlowControl getFlowControl();
-  Parity getParity();
+  String getParams();
   void startTcpServer();
   void send(String s);
   void send(char buffer[], unsigned int len);

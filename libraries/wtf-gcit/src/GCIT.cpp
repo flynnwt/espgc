@@ -277,10 +277,10 @@ void GCIT::discovery() {
 
 String GCIT::doCommand(String req, WiFiClient *client) {
   int i, len, hexval;
-  String res;
+  String res, rest, err;
   char mod, colon, conn, comma, value;
-  String rest, err;
   bool noResponse = (client == NULL);
+  std::vector<String> params;
   Module *module;
   Connector *connector;
   ConnectorSerial *serial;
@@ -445,14 +445,106 @@ String GCIT::doCommand(String req, WiFiClient *client) {
         res = err;
       }
 
+      // set_IR,m:c,IR|SENSOR|SENSOR_NOTIFY|IR_BLASTER|LED_LIGHTING
+      // needs to recreate connector     
       //} else if (req.substring(0, 7).equals("set_IR,")) {
       //}
 
-      //} else if (req.substring(0, 11).equals("set_SERIAL,")) {
-      //}
+    } else if (req.substring(0, 11).equals("set_SERIAL,")) {
+      mod = req.charAt(11);
+      colon = req.charAt(12);
+      conn = req.charAt(13);
+      comma = req.charAt(14);
+      rest = req.substring(15);
+      err = validateModCon(mod, colon, conn, comma, ',');
+      if (err.equals("")) {
+        module = getModule((unsigned int)(mod - '0'));
+        if (!module) {
+          res = ERR_02;
+        } else {
+          connector = module->getConnector((unsigned int)(conn - '0'));
+          if (!connector) {
+            res = ERR_03;
+          } else {
+            if (connector->type != ConnectorType::serial) {
+              res = ERR_13; // i guess
+            } else {
+              serial = (ConnectorSerial *)(connector->control);
+              params = splitText(rest, ',');              
+              if ((params.size() == 1) && (params[0] == "")) {
+                res = ERR_24;
+              } else {
+                if (params.size() == 1) {
+                  res = ERR_25;
+                } else {
+                  if ((params[1] != "FLOW_HARDWARE") && (params[1] != "FLOW_NONE")) {
+                    res = ERR_25;
+                  } else {
+                    if (params.size() != 3) {
+                      res = ERR_26; // i guess
+                    } else {
+                      if ((params[2] != "PARITY_NO") && (params[2] != "PARITY_ODD") && (params[2] != "PARITY_EVEN")) {
+                        res = ERR_26;
+                      } else {
+                        if (!serial->set(params[0].toInt(),
+                                         params[1] == "FLOW_HARDWARE" ? ConnectorSerial::FlowControl::hardware : ConnectorSerial::FlowControl::none,
+                                         params[2] == "PARITY_NO" ? ConnectorSerial::Parity::none : params[2] == "PARITY_ODD" ? ConnectorSerial::Parity::odd : ConnectorSerial::Parity::even)) {
+                          res = ERR_24;
+                        } else {
+                          serial->reset();
+                          /*
+                          Serial.flush();
+                          delay(1);
+                          Serial.end();
+                          // ignore flow control; data bits always 8, stop bits always 1; GC does allow 7 and 2 if config'd from Serial web page;
+                          //  make that a separate api function if ever needed
+                          Serial.begin(serial->baudRate,
+                           serial->parity == ConnectorSerial::Parity::none ? SERIAL_8N1 : serial->parity == ConnectorSerial::Parity::odd ? SERIAL_8O1 : SERIAL_8E1);
+                          Serial.swap();
+                          while (Serial.available() > 0) { // toss any junk
+                            Serial.read();
+                          }
+                          */
+                          res = "SERIAL," + String(mod) + ':' + String(conn) + "," +
+                                serial->getParams();
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      } else {
+        res = err;
+      }
 
-      //} else if (req.substring(0, 11).equals("get_SERIAL,")) {
-      //}
+    } else if (req.substring(0, 11).equals("get_SERIAL,")) {
+      mod = req.charAt(11);
+      colon = req.charAt(12);
+      conn = req.charAt(13);
+      err = validateModCon(mod, colon, conn);
+      if (err.equals("")) {
+        module = getModule((unsigned int)(mod - '0'));
+        if (!module) {
+          res = ERR_02;
+        } else {
+          connector = module->getConnector((unsigned int)(conn - '0'));
+          if (!connector) {
+            res = ERR_03;
+          } else {
+            if (connector->type != ConnectorType::serial) {
+              res = ERR_13; // i guess
+            } else {
+              res = "SERIAL," + String(mod) + ':' + String(conn) + "," +
+                    ((ConnectorSerial *)(connector->control))->getParams();
+            }
+          }
+        }
+      } else {
+        res = err;
+      }
 
       /* Not defined by GC; enable sending serial through a command */
       // if req is already uri decoded, %00 won't work (string terminates early);
@@ -585,7 +677,6 @@ String GCIT::doCommand(String req, WiFiClient *client) {
       } else {
         res = err;
       }
-
     }
 
     else {
