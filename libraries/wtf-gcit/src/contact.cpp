@@ -22,13 +22,16 @@ void GCIT::checkSensors() {
 }
 
 // Sensor Connector
+// allow fcnPin=17, to use A0 analog read
 
 ConnectorSensor::ConnectorSensor(Connector *c, int fPin, int sPin) {
   parent = c;
   fcnPin = fPin;
   statusPin = sPin;
   if (fcnPin != UNDEFINED_FPIN) {
-    if (fcnPin != 16) {
+    if (fcnPin == A0) {
+      pinMode(fcnPin, INPUT);
+    } else if (fcnPin != 16) {
       pinMode(fcnPin, INPUT_PULLUP);
     } else {
       pinMode(fcnPin, INPUT_PULLDOWN_16);
@@ -37,11 +40,19 @@ ConnectorSensor::ConnectorSensor(Connector *c, int fPin, int sPin) {
   if (statusPin != UNDEFINED_SPIN) {
     pinMode(statusPin, OUTPUT);
   }
-  state = digitalRead(fcnPin);
+  if (fcnPin == A0) {
+    state = analogRead(fcnPin);
+  } else {
+    state = digitalRead(fcnPin);
+  }
 }
 
 unsigned int ConnectorSensor::getState() {
-  state = digitalRead(fcnPin);
+  if (fcnPin == A0) {
+    state = analogRead(fcnPin);
+  } else {
+    state = digitalRead(fcnPin);
+  }
   flashStatus();
   return state;
 }
@@ -55,7 +66,9 @@ ConnectorSensorNotify::ConnectorSensorNotify(Connector *c, int fPin, int sPin) {
   fcnPin = fPin;
   statusPin = sPin;
   if (fcnPin != UNDEFINED_FPIN) {
-    if (fcnPin != 16) {
+    if (fcnPin == A0) {
+      pinMode(fcnPin, INPUT);
+    } else if (fcnPin != 16) {
       pinMode(fcnPin, INPUT_PULLUP);
     } else {
       pinMode(fcnPin, INPUT_PULLDOWN_16);
@@ -64,7 +77,11 @@ ConnectorSensorNotify::ConnectorSensorNotify(Connector *c, int fPin, int sPin) {
   if (statusPin != UNDEFINED_SPIN) {
     pinMode(statusPin, OUTPUT);
   }
-  state = digitalRead(fcnPin);
+  if (fcnPin == A0) {
+    state = analogRead(fcnPin);
+  } else {
+    state = digitalRead(fcnPin);
+  }
 }
 
 void ConnectorSensorNotify::setInterval(unsigned long ms) {
@@ -75,7 +92,11 @@ void ConnectorSensorNotify::update() {
   unsigned int prevState = state;
 
   if (fcnPin != UNDEFINED_FPIN) {
-    state = digitalRead(fcnPin);
+    if (fcnPin == A0) {
+      state = analogRead(fcnPin);
+    } else {
+      state = digitalRead(fcnPin);
+    }
 
     if ((state != prevState) || ((interval != 0) && (millis() >= timer + interval))) {
       parent->parent->parent->sensorNotify(this); // connector control->connector->module->gc; callback would be nicer
