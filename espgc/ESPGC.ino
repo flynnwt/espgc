@@ -410,8 +410,9 @@ int startInfra(String ssid, String passphrase, int dhcp, IPAddress staticIp, IPA
     logger.printf(" IP:   %s\n", ipString(ipAddr).c_str());
 
     // allow skipping tcp/discovery
-    config->enableTcp = enableTcp;
     config->enableDiscovery = enableDiscovery;
+    config->enableTcp = enableTcp;
+    gc->enableDiscovery(enableDiscovery);
     gc->enableTcp(config->enableTcp);
     if (config->enableTcp) {
       if (config->enableDiscovery) {
