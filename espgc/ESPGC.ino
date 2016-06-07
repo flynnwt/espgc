@@ -151,6 +151,21 @@ void initStatus() {
     status->defineState(Status::ap, statusAP, 1);
     status->defineState(Status::wifi, statusWiFi, 1);
 
+  }  else if (mode == -1) {
+
+      //using defined states and controlling with state changes
+      status = new Status(pins, 1);
+      unsigned long statusError[1][2] = { { 0, 1 } };             // solid 
+      unsigned long statusReset[1][2] = { { 100, 100 } };         // zippy 
+      unsigned long statusBoot[1][2] = { { 900, 100 } };          // blippy
+      unsigned long statusAP[1][2] = { { 250, 250 } };            // toggly 
+      unsigned long statusWiFi[1][2] = { { 1750, 250 } };         // pokey
+      status->defineState(Status::error, statusError, 1);
+      status->defineState(Status::reset, statusReset, 1);
+      status->defineState(Status::boot, statusBoot, 1);
+      status->defineState(Status::ap, statusAP, 1);
+      status->defineState(Status::wifi, statusWiFi, 1);
+
   } else if (mode == 3) {
 
     //using defined states and controlling with state changes
