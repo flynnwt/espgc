@@ -1,5 +1,8 @@
 #include "router.h"
 
+// is decodeURI() needed any more?  looks like the webserver always decodes the arguments; it is even decoding
+//   "text/plain" body (set as "plain" arg) - Parsing.cpp; seems like it should be a plain() method instead to return data
+
 /*
 connector commands, GET/POST (same format as TCP)...
 http://192.168.0.100/api?cmd=getdevices
@@ -9,11 +12,16 @@ http://192.168.0.100/api?cmd=get_IR
 http://192.168.0.100/api?cmd=sendir
 http://192.168.0.100/api?cmd=getstate
 http://192.168.0.100/api?cmd=setstate
+http://192.168.0.100/api?cmd=get_SERIAL
+http://192.168.0.100/api?cmd=set_SERIAL
 
 connector commands, GET/POST (not defined by GC)...
 http://192.168.0.100/api?cmd=sendserial
 http://192.168.0.100/api?cmd=sendserialx
 http://192.168.0.100/api?cmd=recvserial
+http://192.168.0.100/api?cmd=get_CAMERA
+http://192.168.0.100/api?cmd=set_CAMERA
+http://192.168.0.100/api?cmd=capture
 
 macros...
 GET  http://192.168.0.100/api/macro
@@ -203,14 +211,18 @@ void configFilePost() {
   int code;
 
   if (!config->locked) {
-    if (router->server->hasArg("text")) {
-      text = decodeURI(router->server->arg("text"));
+    if (router->server->hasArg("data") || router->server->hasArg("plain")) {
+      if (router->server->hasArg("data")) {
+        text = decodeURI(router->server->arg("data"));
+      } else {
+        text = router->server->arg("plain");
+      }
       saveReloadConfig(text);
       code = 200;
       data.add("res", getConfigFile());
     } else {
       code = 200; // code = 422;
-      data.add("err", "Expected 'text' parameter");
+      data.add("err", "Expected 'data' parameter or plain body");
     }
   } else {
     code = 200; // code = 422;
@@ -424,6 +436,7 @@ void fileGet() {
 
 }
 
+// post using data= or plain (curl --data-binary="@file")
 void filePost() {
   JSON data;
   String res = "", file;
@@ -432,7 +445,7 @@ void filePost() {
 
   if (!config->locked) {
     if (router->server->hasArg("file")) {
-      if (router->server->hasArg("data")) {
+      if (router->server->hasArg("data") || router->server->hasArg("plain")) {
         file = decodeURI(router->server->arg("file"));
         if (file.charAt(0) != '/') {
           file = "/" + file;
@@ -440,10 +453,15 @@ void filePost() {
         if (!SPIFFS.exists(file)) {
           f = SPIFFS.open(file, "w");
           if (f) {
-            f.print(decodeURI(router->server->arg("data")));
-            f.close();
             data.add("name", file);
-            data.add("data", decodeURI(router->server->arg("data")));
+            if (router->server->hasArg("data")) {
+              f.print(decodeURI(router->server->arg("data")));
+              data.add("data", decodeURI(router->server->arg("data")));
+            } else {
+              f.print(router->server->arg("plain"));
+              data.add("data", router->server->arg("plain"));
+            }
+            f.close();
             code = 200;
           } else {
             data.add("err", "Open failed");
@@ -454,7 +472,7 @@ void filePost() {
           code = 200; // code = 422
         }
       } else {
-        data.add("err", "Expected 'data' parameter");
+        data.add("err", "Expected 'data' parameter or plain body");
         code = 200; // code = 422
       }
     } else {
