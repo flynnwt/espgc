@@ -40,7 +40,9 @@ GET  http://192.168.0.100/api/decompressir
 *POST http://192.168.0.100/api/admin/restart
 *GET http://192.168.0.100/api/admin/file
 *POST http://192.168.0.100/api/admin/file
+*POST http://192.168.0.100/api/admin/file/upload
 *DELETE http://192.168.0.100/api/admin/file
+*GET http://192.168.0.100/api/admin/fileinfo
 POST http://192.168.0.100/api/admin/lock
 POST http://192.168.0.100/api/admin/unlock
 
@@ -55,10 +57,14 @@ possible: dir list, file write
 //   2. don't make general purpose json serializer; just do it with a special purpose function
 
 Router* router;
+HTTPUpload* upload;
+String uploadErr;
 
-static void routeHandler(void);
-void configGet(void);
-void configPost(void);
+static void routeHandler();
+void configGet();
+void configPost();
+static void handleUpload();
+static void uploadDone();
 
 String decodeMethod(uint8_t m) {
   String method;
@@ -133,6 +139,7 @@ void Router::init() {
   //server->on("/ir", handleIr);
   server->serveStatic("/", SPIFFS, "/index.html");
   server->serveStatic("/", SPIFFS, "/");
+  server->on("/admin/file/upload", HTTP_POST, uploadDone, handleUpload);
   server->onNotFound(routeHandler);
 }
 
@@ -396,6 +403,59 @@ void decompressIrGet() {
   sendJSON(code, data);
 }
 
+void fileInfoGet() {
+  JSON data;
+  String res = "", file;
+  int code;
+  FSInfo info;
+  File f;
+
+  if (!config->locked) {
+
+    if (SPIFFS.info(info)) {
+      data.add("totalBytes", info.totalBytes);
+      data.add("usedBytes", info.usedBytes);
+      data.add("blockSize", info.blockSize);
+      data.add("pageSize", info.pageSize);
+      data.add("maxOpenFiles", info.maxOpenFiles);
+      data.add("maxPathLength", info.maxPathLength);
+
+      if (router->server->hasArg("file")) {
+        file = decodeURI(router->server->arg("file"));
+        if (file.charAt(0) != '/') {
+          file = "/" + file;
+        }
+        data.add("filename", file);
+        if (SPIFFS.exists(file)) {
+          f = SPIFFS.open(file, "r");
+          if (f) {
+            data.add("filesize", f.size());
+            f.close();
+            code = 200;
+          } else {
+            data.add("err", "File open failed");
+            code = 200; // code = 422
+          }
+        } else {
+          data.add("err", "File doesn't exist");
+          code = 200; // code = 422
+        }
+      } else {
+        code = 200;
+      }
+    } else {
+      data.add("err", "SPIFFS info failed");
+      code = 200; // code = 422
+    }
+
+  } else {
+    data.add("err", "Device is locked");
+    code = 200; // code = 422
+  }
+  sendJSON(code, data);
+
+}
+
 void fileGet() {
   JSON data;
   String res = "", file;
@@ -437,6 +497,7 @@ void fileGet() {
 }
 
 // post using data= or plain (curl --data-binary="@file")
+// warning: crashes for 'big' files; use upload instead
 void filePost() {
   JSON data;
   String res = "", file;
@@ -619,6 +680,11 @@ void Router::handleAPI() {
       fileDelete();
       return;
     }
+  } else if (router->server->uri().equals("/api/admin/fileinfo")) {
+    if (method == HTTP_GET) {
+      fileInfoGet();
+      return;
+    }
   } else  if (router->server->uri().equals("/api")) {           // all cmd= types 
     if ((method == HTTP_GET) || (method == HTTP_POST)) {        // allow both
       if (server->arg("cmd")) {
@@ -631,4 +697,83 @@ void Router::handleAPI() {
   Serial.printf("400 Invalid api request\n");
   data.add("err", "Invalid api request");
   sendJSON(400, data);
+}
+
+static void uploadDone() {
+  JSON res;
+  int code;
+
+  res.add("filename", upload->filename);
+  res.add("status", upload->status);
+  res.add("name", upload->name);
+  res.add("type", upload->type);
+  res.add("totalSize", upload->totalSize);
+  res.add("currentSize", upload->currentSize);
+  code = 200;
+  if (uploadErr.length() > 0) {
+    res.add("err", uploadErr);
+  } else {
+    /*
+    File f;
+    if (f = SPIFFS.open(upload->filename, "r")) {
+      Serial.printf("%s: %iB\n", upload->filename.c_str(), f.size());
+      f.close();
+    } else {
+      Serial.printf("Couldn't open file just written!\n");
+    }
+    */
+  }
+  sendJSON(code, res);  // or send diff code for fail
+}
+
+// curl -X POST -F "file=@app.js" 192.168.0.111/admin/file/upload
+static void handleUpload() {
+  static File f;
+
+  upload = &router->server->upload();
+  uploadErr = "";
+
+  if (upload->status == UPLOAD_FILE_START) {
+
+    if (upload->filename.charAt(0) != '/') {
+      upload->filename = "/" + upload->filename;
+    }
+    Serial.printf("Uploading %s\n", upload->filename.c_str());
+    if (!(f = SPIFFS.open(upload->filename, "w"))) {
+      uploadErr = "File not opened for writing";
+      Serial.println(uploadErr);
+    }
+
+  } else if (upload->status == UPLOAD_FILE_WRITE) {
+
+    if (f) {
+      if (f.write(upload->buf, upload->currentSize) != upload->currentSize) {
+        uploadErr = "Didn't write all bytes";
+        Serial.println(uploadErr);
+      } else {
+        Serial.printf("Wrote %iB\n", upload->currentSize);
+      }
+    } else {
+      Serial.println("File not opened for writing!");
+    }
+
+  } else if (upload->status == UPLOAD_FILE_END) {
+
+    if (f) {
+      f.close();
+      Serial.printf("%s (%iB)\n", upload->filename.c_str(), upload->totalSize);
+    } else {
+      Serial.println("File not opened for writing!");
+    }
+
+  } else if (upload->status == UPLOAD_FILE_ABORTED) {
+
+    uploadErr = "Aborted";
+
+  } else {
+
+    uploadErr = "Unexpected status";
+
+  }
+
 }
