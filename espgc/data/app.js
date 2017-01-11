@@ -391,7 +391,7 @@ function saveConfigFile() {
 
   text = $('#configFileText').val().replace(/\nupdated=.*?\n/, '\nupdated=' + (Math.floor(Date.now() / 1000)) + '\n');
   text = encodeURIComponent(text);
-  body += 'text=' + text;
+  body += 'data=' + text;
   $.ajax({ url: '/api/configfile', method: 'POST', body: body }, function(code, res, xhr) {
 
     console.log('POST /api/configfile');
