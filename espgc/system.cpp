@@ -56,6 +56,9 @@ void restart() {
   Serial.println("Restarting...");
   //delay(10000);
   system_restart();
+  while (1) {
+    yield();
+  }
 }
 
 void reset() {
